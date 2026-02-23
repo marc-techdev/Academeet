@@ -1,0 +1,1172 @@
+[
+  {
+    "id": "TC001",
+    "title": "Missing full name blocks submission with validation message",
+    "description": "Verifies the form validates required full name and displays a visible error when omitted.",
+    "category": "User Sign Up",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "action",
+        "description": "Type \"STU-UNIQ-10002\" into the university ID number input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"missing.name+10002@example.com\" into the email input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass!234\" into the password input field"
+      },
+      {
+        "type": "action",
+        "description": "Select role via radio button (Student)"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Up\" button to submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Full name\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Invalid email format shows validation error",
+    "description": "Verifies the email field rejects an invalid email format and shows a visible validation message.",
+    "category": "User Sign Up",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Invalid Email User\" into the full name input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"STU-UNIQ-10003\" into the university ID number input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-an-email\" into the email input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass!234\" into the password input field"
+      },
+      {
+        "type": "action",
+        "description": "Select role via radio button (Student)"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Up\" button to submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"email\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"invalid\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Weak/short password shows validation error",
+    "description": "Verifies the password field enforces password rules and shows a visible error for a weak password.",
+    "category": "User Sign Up",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Weak Password User\" into the full name input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"STU-UNIQ-10004\" into the university ID number input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"weak.pass+10004@example.com\" into the email input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"123\" into the password input field"
+      },
+      {
+        "type": "action",
+        "description": "Select role via radio button (Student)"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Up\" button to submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Password\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"must\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Missing role selection blocks submission",
+    "description": "Verifies role selection is required and an error is shown when attempting to submit without a selected role.",
+    "category": "User Sign Up",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /signup"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Sign Up\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Type \"No Role User\" into the full name input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"NOROLE-UNIQ-30001\" into the university ID number input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"no.role+30001@example.com\" into the email input field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"ValidPass!234\" into the password input field"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Up\" button to submit"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Role\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Professor can access professor dashboard when authenticated",
+    "description": "Verifies an authenticated professor can view the professor dashboard without being redirected.",
+    "category": "Route Protection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Professor\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Authenticated student is redirected away from professor dashboard",
+    "description": "Verifies an authenticated student is not allowed to access /professor/dashboard and is redirected to /student/dashboard.",
+    "category": "Route Protection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /professor/dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Student\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Authenticated professor is redirected away from student dashboard",
+    "description": "Verifies an authenticated professor is not allowed to access /student/dashboard and is redirected to /professor/dashboard.",
+    "category": "Route Protection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /student/dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Professor\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Authenticated user can access profile page",
+    "description": "Verifies an authenticated user can open /profile and see profile content.",
+    "category": "Route Protection",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to /profile"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/profile\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Profile\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Create a consultation window successfully and see generated 15-minute slots",
+    "description": "Verifies a professor can create an availability window and sees a success message and a new window card with a generated slot grid.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end after start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"success\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"slots\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"new window card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"slot grid\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Validation blocks creation when end time is before start time",
+    "description": "Verifies client-side validation prevents submission when the end time is earlier than the start time.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end before start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"end\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"after\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Required field validation when attempting to submit with missing date",
+    "description": "Verifies the form shows a visible validation error and does not create a window when the date is not provided.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end after start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"date\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Required field validation when attempting to submit with missing start time",
+    "description": "Verifies the form shows a visible validation error and does not create a window when the start time is not provided.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end after start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"start\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Required field validation when attempting to submit with missing end time",
+    "description": "Verifies the form shows a visible validation error and does not create a window when the end time is not provided.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"end\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Creation works for a short window that should produce at least one 15-minute slot",
+    "description": "Verifies that creating a small valid window still generates a slot grid and shows a success message referencing slots created.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end after start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"slots\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"slot grid\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Newly created window card is visible and clearly associated with the selected date",
+    "description": "Verifies that after successful creation, the dashboard shows a new window card and the chosen date is visible within that card area.",
+    "category": "Professor Consultation Window Creation",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Fill date picker"
+      },
+      {
+        "type": "action",
+        "description": "Fill start time input"
+      },
+      {
+        "type": "action",
+        "description": "Fill end time input (end after start)"
+      },
+      {
+        "type": "action",
+        "description": "Click Create Window button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"new window card\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Date\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Book an open slot successfully with a valid agenda",
+    "description": "Verifies a student can book an open slot by providing an agenda of at least 10 characters and then sees confirmation and the slot become Taken.",
+    "category": "Student Slot Booking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Discuss project milestone\" into the agenda textarea"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm Booking\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Booking successful\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Taken\" is visible for the booked slot"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Prevent booking when agenda is fewer than 10 characters",
+    "description": "Verifies the booking dialog enforces the minimum agenda length and blocks confirmation when the agenda is too short.",
+    "category": "Student Slot Booking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Too short\" into the agenda textarea"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm Booking\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"at least 10\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Show validation error when agenda is empty",
+    "description": "Verifies the booking dialog blocks submission and displays a visible validation message when the agenda is left blank.",
+    "category": "Student Slot Booking",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "action",
+        "description": "Click the agenda textarea"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Tab\""
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm Booking\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"required\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Close booking dialog without booking and ensure slot remains open",
+    "description": "Verifies a student can dismiss the booking dialog and that no booking occurs (slot remains open).",
+    "category": "Student Slot Booking",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Confirm Booking\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Escape\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Confirm Booking\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an open (green) slot is visible in the slot grid"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Real-time update: slot changes to Taken after successful booking",
+    "description": "Verifies that after booking, the same slot visibly updates to Taken status without requiring a manual page refresh.",
+    "category": "Student Slot Booking",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Discuss thesis outline draft\" into the agenda textarea"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Confirm Booking\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Booking successful\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Taken\" is visible for the booked slot"
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Booking dialog displays required agenda prompt before submission",
+    "description": "Verifies the booking dialog clearly shows the agenda input and indicates booking requires providing an agenda.",
+    "category": "Student Slot Booking",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Login\" button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click an open (green) slot to open the booking dialog"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Agenda\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"agenda textarea\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Sign out from Professor Dashboard redirects to Login",
+    "description": "Verifies that a logged-in user can sign out from an authenticated page and is redirected to the login page.",
+    "category": "Sign Out",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Professor Dashboard\" navigation option (or equivalent) to open the professor dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/professor/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Out\" button in the header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/login\""
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Sign out from Student Dashboard redirects to Login",
+    "description": "Verifies that a logged-in user can sign out from the student dashboard and is redirected to the login page.",
+    "category": "Sign Out",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Student Dashboard\" navigation option (or equivalent) to open the student dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Out\" button in the header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/login\""
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Sign out from Profile page redirects to Login",
+    "description": "Verifies that a logged-in user can sign out from the profile page and is redirected to the login page.",
+    "category": "Sign Out",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Profile\" in the header or navigation menu"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/profile\""
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Out\" button in the header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/login\""
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "After sign out, login page is visibly loaded",
+    "description": "Verifies that after signing out, the user sees expected login page UI elements.",
+    "category": "Sign Out",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click \"Sign Out\" button in the header"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/login\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Login\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Email\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Sign out button is visible on authenticated page header",
+    "description": "Verifies that the authenticated header contains a visible Sign Out control on an authenticated page.",
+    "category": "Sign Out",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_USER}}\" into the email field"
+      },
+      {
+        "type": "action",
+        "description": "Type \"{{LOGIN_PASSWORD}}\" into the password field"
+      },
+      {
+        "type": "action",
+        "description": "Click the \"Log in\" button"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Student Dashboard\" navigation option (or equivalent) to open the student dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/student/dashboard\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Sign Out\" is visible"
+      }
+    ]
+  }
+]

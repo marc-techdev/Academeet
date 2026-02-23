@@ -1,0 +1,120 @@
+version: "2"
+type: frontend
+tech_stack:
+  - typescript
+  - nextjs
+  - tailwindcss
+  - shadcn-ui
+  - supabase
+  - react-hook-form
+  - zod
+routes:
+  - path: /login
+    file: src/app/(auth)/login/page.tsx
+    auth_required: false
+    description: User login page with email and password
+  - path: /signup
+    file: src/app/(auth)/signup/page.tsx
+    auth_required: false
+    description: User sign-up page with role selection
+  - path: /professor/dashboard
+    file: src/app/professor/dashboard/page.tsx
+    auth_required: true
+    description: Professor dashboard to create consultation windows and view slots
+  - path: /student/dashboard
+    file: src/app/student/dashboard/page.tsx
+    auth_required: true
+    description: Student dashboard to browse and book consultation slots in real-time
+  - path: /profile
+    file: src/app/(protected)/profile/page.tsx
+    auth_required: true
+    description: User profile page showing personal details and student appointments
+features:
+  - name: User Sign Up
+    description: Create a new student or professor account
+    files:
+      - src/app/(auth)/signup/page.tsx
+      - src/app/(auth)/signup/actions.ts
+    entry_route: /signup
+    user_interactions:
+      - Fill full name input field
+      - Fill university ID number input field
+      - Fill email input field
+      - Fill password input field
+      - Select role via radio button (Student or Professor)
+      - Click Sign Up button to submit
+      - Redirected to role-specific dashboard on success
+      - See error message on duplicate ID or invalid input
+    api_calls: []
+    auth_required: false
+  - name: User Login
+    description: Login with email and password credentials
+    files:
+      - src/app/(auth)/login/page.tsx
+      - src/app/(auth)/login/actions.ts
+    entry_route: /login
+    user_interactions:
+      - Fill email input field
+      - Fill password input field
+      - Click Sign In button to submit
+      - Redirected to role-specific dashboard on success
+      - See error message on invalid credentials
+    api_calls: []
+    auth_required: false
+  - name: Route Protection
+    description: Middleware enforces role-based access control
+    files:
+      - src/middleware.ts
+    entry_route: /professor/dashboard
+    user_interactions:
+      - Unauthenticated user visiting /professor/dashboard is redirected to /login
+      - Unauthenticated user visiting /student/dashboard is redirected to /login
+      - Student visiting /professor/dashboard is redirected to /student/dashboard
+      - Professor visiting /student/dashboard is redirected to /professor/dashboard
+    api_calls: []
+    auth_required: false
+  - name: Professor Consultation Window Creation
+    description: Professors create availability windows that auto-generate 15-minute slots
+    files:
+      - src/app/professor/dashboard/page.tsx
+      - src/app/professor/dashboard/actions.ts
+      - src/components/professor/CreateWindowForm.tsx
+    entry_route: /professor/dashboard
+    user_interactions:
+      - Fill date picker
+      - Fill start time input
+      - Fill end time input
+      - Click Create Window button
+      - See success toast with number of slots created
+      - See new window card with generated slot grid
+    api_calls: []
+    auth_required: true
+  - name: Student Slot Booking
+    description: Students browse and book open consultation slots with a required agenda
+    files:
+      - src/app/student/dashboard/page.tsx
+      - src/app/student/dashboard/actions.ts
+      - src/components/student/SlotGrid.tsx
+      - src/components/student/BookingDialog.tsx
+    entry_route: /student/dashboard
+    user_interactions:
+      - View list of consultation windows with slot grids
+      - Click an open (green) slot to open booking dialog
+      - Fill agenda textarea with at least 10 characters
+      - Click Confirm Booking button
+      - See success toast on successful booking
+      - Slot changes to Taken status in real-time
+    api_calls: []
+    auth_required: true
+  - name: Sign Out
+    description: Sign out the current user and redirect to login
+    files:
+      - src/app/(auth)/signout/actions.ts
+      - src/components/layout/Header.tsx
+    entry_route: /login
+    user_interactions:
+      - Click Sign Out button in the header
+      - Redirected to /login page
+    api_calls: []
+    auth_required: true
+known_limitations: []

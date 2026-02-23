@@ -1,0 +1,17 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:5500",
+  "executionArgs": {
+    "projectName": "faculty-scheduler",
+    "projectPath": "c:\\Users\\User\\Desktop\\Personal Projects\\Faculty Consultation Scheduler\\faculty-scheduler",
+    "testIds": [],
+    "additionalInstruction": "Smoke test the Sign-Up and Login flows. Verify students are redirected to /student/dashboard, professors to /professor/dashboard, and unauthorized users are kicked to /login.",
+    "envs": {
+      "API_KEY": "sk-user-fzAxW8RQt_QZsIki6pXmOdTSApremPGRtXFIhRtm0cAzwZqbaaVtE9_JweLlPEowTEA-ovhEYUL8-NDzFa_scuMxt216KcLYEHPng9sdgNIGFnFslzsk13R49OdaJk_CRwE"
+    }
+  },
+  "serverPort": 59904,
+  "proxy": "http://858f1963-64c3-4e48-bf6c-6fea3acf8dab:UZXCentNLfgm6F1sZ8BC0KQlZS3D5Qc8@tun.testsprite.com:8080"
+}
