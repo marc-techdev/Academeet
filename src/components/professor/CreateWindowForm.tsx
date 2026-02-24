@@ -84,9 +84,8 @@ export function CreateWindowForm() {
       <CardHeader>
         <CardTitle className="text-lg">Post Consultation Window</CardTitle>
         <CardDescription>
-          Set a date and time range — 15-minute slots will be generated
-          automatically.
-        </CardDescription>
+          Set a date and time range — 30-minute slots will be generated
+          automatically within this window.      </CardDescription>
       </CardHeader>
 
       <CardContent>

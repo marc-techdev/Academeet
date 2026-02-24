@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { deleteConsultationWindow } from "@/app/professor/dashboard/actions";
+import { deletePastSlot } from "@/app/professor/dashboard/actions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,18 +17,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export function DeleteWindowButton({ windowId, customTrigger }: { windowId: string, customTrigger?: React.ReactNode }) {
+export function DeletePastSlotButton({ slotId, customTrigger }: { slotId: string, customTrigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await deleteConsultationWindow(windowId);
+      const result = await deletePastSlot(slotId);
       
-      if (result.error) {
+      if (result?.error) {
         toast.error(result.error);
       } else {
-        toast.success("Consultation window deleted.");
+        toast.success("Past appointment deleted.");
         setOpen(false);
       }
     });
@@ -38,32 +38,30 @@ export function DeleteWindowButton({ windowId, customTrigger }: { windowId: stri
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {customTrigger ? (
-          <div className="inline-block" title="Delete window">
+          <div className="inline-block" title="Delete appointment">
              {customTrigger}
           </div>
         ) : (
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-            title="Delete window"
+            className="h-8 w-8 text-zinc-500 hover:text-red-600 hover:bg-red-50"
+            title="Delete appointment"
           >
             <Trash2 className="h-4 w-4" />
-            <span className="sr-only">Delete window</span>
+            <span className="sr-only">Delete appointment</span>
           </Button>
         )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-500">
+          <DialogTitle className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
-            Delete Consultation Window
+            Delete Appointment Record
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this consultation window? This will
-            permanently remove all unbooked slots and cancel any booked
-            appointments. This action cannot be undone.
+            Are you sure you want to permanently delete this past appointment record? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,7 +85,7 @@ export function DeleteWindowButton({ windowId, customTrigger }: { windowId: stri
                 Deleting...
               </>
             ) : (
-              "Delete Window"
+              "Delete"
             )}
           </Button>
         </DialogFooter>

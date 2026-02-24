@@ -11,15 +11,10 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { CreateWindowForm } from "@/components/professor/CreateWindowForm";
-import { BookedSlotDialog } from "@/components/professor/BookedSlotDialog";
-import { DeleteWindowButton } from "@/components/professor/DeleteWindowButton";
-import { EditWindowDialog } from "@/components/professor/EditWindowDialog";
-import { Header } from "@/components/layout/Header";
+import { ProfessorSidebar } from "@/components/professor/ProfessorSidebar";
+import { ProfessorHeaderActions } from "@/components/professor/ProfessorHeaderActions";
+import { ProfessorBookingsGrid } from "@/components/professor/ProfessorBookingsGrid";
 
 import type { UserRole } from "@/types/database";
 import type { SlotStatus } from "@/types/database";
@@ -122,143 +117,33 @@ export default async function ProfessorDashboardPage() {
     );
   }
 
+  // ── Notification Logic ────────────────────────────────────
+  const windowsMap = new Map((windows ?? []).map(w => [w.id, w]));
+  const slotsWithDate = (allSlots ?? []).map(slot => ({
+    ...slot,
+    date: windowsMap.get(slot.window_id)?.date || "Unknown Date"
+  }));
+  const bookedSlotsList = slotsWithDate.filter(s => s.status === "booked");
+
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-linear-to-br from-zinc-50 via-blue-50/30 to-indigo-50/20 dark:from-zinc-950 dark:via-blue-950/10 dark:to-indigo-950/5">
-      <Header variant="professor" />
+    <div className="min-h-screen bg-zinc-50 flex text-zinc-900 font-sans selection:bg-[#ff5757]/20">
+      <ProfessorSidebar professorName={profile.full_name} department="Professor" />
 
-      {/* Main */}
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        {/* Greeting */}
-        <div className="mb-8 space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome, Professor {profile.full_name} 👋
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col p-8 lg:p-12 overflow-y-auto">
+        {/* Top Header / Actions */}
+        <div className="flex items-center justify-between mb-10 w-full animate-in fade-in slide-in-from-top-4 duration-500">
+          <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900">
+            Schedule
           </h1>
-          <p className="text-muted-foreground">
-            Manage your consultation windows and upcoming appointments.
-          </p>
-        </div>
-
-        {/* Create Window Form */}
-        <div className="mb-10">
-          <CreateWindowForm />
-        </div>
-
-        {/* Existing Windows */}
-        <section>
-          <h2 className="mb-4 text-xl font-semibold tracking-tight">
-            Your Consultation Windows
-          </h2>
-
-          {(!windows || windows.length === 0) && (
-            <Card className="border-dashed border-zinc-300 dark:border-zinc-700">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <CalendarDays className="mb-3 h-10 w-10 text-zinc-400" />
-                <p className="text-sm text-muted-foreground">
-                  No consultation windows yet. Use the form above to create your
-                  first one.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid gap-6">
-            {windows?.map((w) => {
-              const slots = slotsByWindow.get(w.id) ?? [];
-              const bookedCount = slots.filter(
-                (s) => s.status === "booked"
-              ).length;
-
-              return (
-                <Card
-                  key={w.id}
-                  className="border-zinc-200/60 shadow-sm dark:border-zinc-800/60"
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <CalendarDays className="h-4 w-4 text-blue-600" />
-                        {format(parseISO(w.date), "EEEE, MMMM d, yyyy")}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground mr-2">
-                          {bookedCount}/{slots.length} booked
-                        </span>
-                        <EditWindowDialog
-                          windowId={w.id}
-                          initialDate={w.date}
-                          initialStartTime={w.start_time}
-                          initialEndTime={w.end_time}
-                          hasBookedSlots={bookedCount > 0}
-                        />
-                        <DeleteWindowButton windowId={w.id} />
-                      </div>
-                    </div>
-                    <CardDescription className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {slots.length > 0 ? (
-                        <>
-                          {format(parseISO(slots[0].start_time), "h:mm a")} –{" "}
-                          {format(
-                            parseISO(slots[slots.length - 1].end_time),
-                            "h:mm a"
-                          )}
-                        </>
-                      ) : (
-                        "No time range"
-                      )}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent>
-                    {slots.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No slots generated.
-                      </p>
-                    ) : (
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {slots.map((slot) =>
-                          slot.status === "booked" && slot.student ? (
-                            <BookedSlotDialog
-                              key={slot.id}
-                              slot={{
-                                id: slot.id,
-                                start_time: slot.start_time,
-                                end_time: slot.end_time,
-                                agenda: slot.agenda,
-                                studentName: slot.student.full_name,
-                                studentIdNumber: slot.student.id_number,
-                              }}
-                            />
-                          ) : (
-                            <div
-                              key={slot.id}
-                              className="rounded-lg border border-zinc-100 bg-zinc-50/50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/30"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="font-medium">
-                                    {format(parseISO(slot.start_time), "h:mm a")}
-                                  </span>
-                                  <span className="text-muted-foreground">–</span>
-                                  <span className="font-medium">
-                                    {format(parseISO(slot.end_time), "h:mm a")}
-                                  </span>
-                                </div>
-                                {statusBadge(slot.status)}
-                              </div>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="flex items-center gap-3">
+             <ProfessorHeaderActions bookedSlots={bookedSlotsList} />
           </div>
-        </section>
+        </div>
+
+        {/* Existing Windows Calendar Grid -> Will become Vertical Timeline */}
+        <ProfessorBookingsGrid windows={windows ?? []} slotsByWindow={slotsByWindow} />
       </main>
     </div>
   );

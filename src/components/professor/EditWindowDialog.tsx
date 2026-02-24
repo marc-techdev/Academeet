@@ -48,6 +48,7 @@ export interface EditWindowDialogProps {
   initialStartTime: string; // HH:mm:ss
   initialEndTime: string; // HH:mm:ss
   hasBookedSlots: boolean;
+  customTrigger?: React.ReactNode;
 }
 
 export function EditWindowDialog({
@@ -56,6 +57,7 @@ export function EditWindowDialog({
   initialStartTime,
   initialEndTime,
   hasBookedSlots,
+  customTrigger,
 }: EditWindowDialogProps) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -104,16 +106,23 @@ export function EditWindowDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-zinc-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30"
-          title={hasBookedSlots ? "Cannot edit window with booked slots" : "Edit window"}
-          disabled={hasBookedSlots} // Disable trigger if there are booked slots
-        >
-          <Edit2 className="h-4 w-4" />
-          <span className="sr-only">Edit window</span>
-        </Button>
+        {customTrigger ? (
+          <div className="inline-block" title={hasBookedSlots ? "Cannot edit window with booked slots" : "Edit window"}>
+            {/* Wrapper is useful here so we can pass title/tooltip and handle the disabled UI if needed, though customizing trigger directly is often better. We'll clone element if needed or just render customTrigger directly if asChild is used carefully */}
+            {customTrigger}
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-zinc-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/30"
+            title={hasBookedSlots ? "Cannot edit window with booked slots" : "Edit window"}
+            disabled={hasBookedSlots} // Disable trigger if there are booked slots
+          >
+            <Edit2 className="h-4 w-4" />
+            <span className="sr-only">Edit window</span>
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent>
@@ -123,8 +132,8 @@ export function EditWindowDialog({
             Edit Consultation Window
           </DialogTitle>
           <DialogDescription>
-            Modify the date or time frame. This will delete all unbooked slots and
-            regenerate new 15-minute intervals.
+            Note: Editing the window will clear any unbooked slots and 
+            regenerate new 30-minute intervals.
           </DialogDescription>
         </DialogHeader>
 

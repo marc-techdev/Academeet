@@ -71,18 +71,18 @@ export default async function StudentDashboardPage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-linear-to-br from-zinc-50 via-emerald-50/30 to-teal-50/20 dark:from-zinc-950 dark:via-emerald-950/10 dark:to-teal-950/5">
+    <div className="min-h-screen bg-cyan-50 dark:bg-zinc-950 text-cyan-900 dark:text-zinc-50">
       <Header variant="student" />
 
       {/* Main */}
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="mb-8 space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
+        <div className="mb-8 space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-cyan-900 dark:text-zinc-50">
             Welcome, {profile.full_name} 👋
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-cyan-700 dark:text-zinc-400">
             Browse available consultation slots and book your next appointment.
-            Slots update in <span className="font-medium text-emerald-600 dark:text-emerald-400">real-time</span> — no refresh needed.
+            Slots update in <span className="font-medium text-green-600 dark:text-green-400">real-time</span> — no refresh needed.
           </p>
         </div>
 

@@ -28,7 +28,7 @@ export interface CreateWindowResult {
 
 /**
  * Server Action — creates a consultation window and auto-generates
- * 15-minute slots for the given time range.
+ * 30-minute slots for the given time range.
  *
  * @param _prev  Previous action state (unused, required by useActionState).
  * @param formData  FormData with `date`, `start_time`, `end_time`.
@@ -77,7 +77,7 @@ export async function createConsultationWindow(
     return { error: windowError?.message ?? "Failed to create window." };
   }
 
-  // ── 4. Calculate 15-minute intervals ──────────────────────
+  // ── 4. Calculate 30-minute intervals ──────────────────────
   const baseDate = parse(date, "yyyy-MM-dd", new Date());
   const startDt = parse(start_time, "HH:mm", baseDate);
   const endDt = parse(end_time, "HH:mm", baseDate);
@@ -91,8 +91,8 @@ export async function createConsultationWindow(
   }[] = [];
   let cursor = startDt;
 
-  while (isBefore(addMinutes(cursor, 15), endDt) || addMinutes(cursor, 15).getTime() === endDt.getTime()) {
-    const slotEnd = addMinutes(cursor, 15);
+  while (isBefore(addMinutes(cursor, 30), endDt) || addMinutes(cursor, 30).getTime() === endDt.getTime()) {
+    const slotEnd = addMinutes(cursor, 30);
     slots.push({
       window_id: window.id,
       professor_id: user.id,
@@ -104,7 +104,7 @@ export async function createConsultationWindow(
   }
 
   if (slots.length === 0) {
-    return { error: "Time range is too short for at least one 15-minute slot." };
+    return { error: "Time range is too short for at least one 30-minute slot." };
   }
 
   // ── 5. Batch insert slots ─────────────────────────────────
@@ -232,8 +232,8 @@ export async function editConsultationWindow(
   }[] = [];
   let cursor = startDt;
 
-  while (isBefore(addMinutes(cursor, 15), endDt) || addMinutes(cursor, 15).getTime() === endDt.getTime()) {
-    const slotEnd = addMinutes(cursor, 15);
+  while (isBefore(addMinutes(cursor, 30), endDt) || addMinutes(cursor, 30).getTime() === endDt.getTime()) {
+    const slotEnd = addMinutes(cursor, 30);
     slots.push({
       window_id: windowId,
       professor_id: user.id,
@@ -245,7 +245,7 @@ export async function editConsultationWindow(
   }
 
   if (slots.length === 0) {
-    return { error: "Time range is too short for at least one 15-minute slot." };
+    return { error: "Time range is too short for at least one 30-minute slot." };
   }
 
   const { error: insertSlotsError } = await supabase
@@ -256,4 +256,87 @@ export async function editConsultationWindow(
 
   revalidatePath("/professor/dashboard");
   return { success: true, slotsCreated: slots.length };
+}
+
+export interface CancelBookingResult {
+  success?: boolean;
+  error?: string;
+}
+
+/**
+ * Server Action — cancels a booked consultation slot with a reason.
+ * RLS ensures professors can only cancel slots in their own windows.
+ */
+export async function cancelConsultationBooking(slotId: string, reason?: string): Promise<CancelBookingResult> {
+  const supabase = await createClient();
+
+  // Fetch current slot to preserve original agenda
+  const { data: slot, error: fetchError } = await supabase
+    .from("slots")
+    .select("agenda")
+    .eq("id", slotId)
+    .single();
+
+  if (fetchError) return { error: fetchError.message };
+
+  type SlotRecord = { agenda: string | null };
+  const slotRecord = slot as SlotRecord | null;
+
+  let updatedAgenda = slotRecord?.agenda || "";
+  if (reason) {
+    updatedAgenda = `[CANCELLED: ${reason}]\n\nOriginal Agenda:\n${updatedAgenda || "None"}`;
+  }
+
+  const { error } = await supabase
+    .from("slots")
+    .update({ status: "cancelled", student_id: null, agenda: updatedAgenda } as never)
+    .eq("id", slotId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/professor/dashboard");
+  return { success: true };
+}
+
+/**
+ * Server Action — removes a single past slot (whether booked, unbooked, or revoked).
+ */
+export async function deletePastSlot(slotId: string): Promise<{ success?: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Deleting a slot directly from the database table.
+  const { error } = await supabase
+    .from("slots")
+    .delete()
+    .eq("id", slotId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/professor/dashboard");
+  return { success: true };
+}
+
+/**
+ * Server Action — removes multiple past slots in a single batch.
+ */
+export async function deleteMultiplePastSlots(slotIds: string[]): Promise<{ success?: boolean; error?: string }> {
+  if (!slotIds || slotIds.length === 0) return { success: true };
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("slots")
+    .delete()
+    .in("id", slotIds);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/professor/dashboard");
+  return { success: true };
 }
