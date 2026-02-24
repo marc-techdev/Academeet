@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { Loader2, ShieldCheck, Briefcase } from "lucide-react";
+import { Loader2, ShieldCheck, Briefcase, GraduationCap } from "lucide-react";
 
 import { signUpUser, type SignUpResult } from "../actions";
 
@@ -58,59 +58,71 @@ export default function ProfessorSignUpPage() {
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-zinc-50 via-blue-50/40 to-indigo-50/30 dark:from-zinc-950 dark:via-blue-950/20 dark:to-indigo-950/10 px-4 py-10">
-      {/* Background decoration */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-blue-200/30 blur-3xl dark:bg-blue-900/20" />
-        <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-indigo-200/30 blur-3xl dark:bg-indigo-900/20" />
+    <div className="grid min-h-screen lg:grid-cols-2">
+      {/* ── Left Side (Brand & Visuals) ── */}
+      <div className="hidden flex-col justify-center bg-indigo-600 p-12 text-white lg:flex relative overflow-hidden">
+        {/* Subtle background decoration */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-indigo-500/50 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-500/30 blur-3xl" />
+        </div>
+        
+        <div className="relative z-10 mx-auto max-w-md text-center">
+          <h1 className="mb-4 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            Faculty Portal
+          </h1>
+          <p className="mb-12 text-lg text-indigo-100">
+            Manage your <span className="underline decoration-indigo-300 underline-offset-4 font-semibold">consultation hours</span> in one centralized place
+          </p>
+
+          {/* Aesthetic illustration placeholder */}
+          <div className="mx-auto flex h-64 w-64 items-center justify-center rounded-3xl bg-indigo-500/30 backdrop-blur-sm border border-indigo-400/20 shadow-2xl">
+              <Briefcase className="h-24 w-24 text-indigo-50 opacity-90" />
+          </div>
+        </div>
       </div>
 
-      <Card className="relative z-10 w-full max-w-md border-zinc-200/60 shadow-xl shadow-zinc-900/5 backdrop-blur dark:border-zinc-800/60 dark:shadow-zinc-950/30">
-        <CardHeader className="items-center space-y-3 pb-2">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/25">
-            <Briefcase className="h-7 w-7" />
-          </div>
+      {/* ── Right Side (Form Area) ── */}
+      <div className="flex flex-col justify-center bg-zinc-50 px-6 py-12 dark:bg-zinc-950 sm:px-12 lg:px-24 xl:px-32 relative">
+        <div className="absolute top-8 left-8 flex items-center gap-2">
+            <GraduationCap className="h-6 w-6 text-indigo-600" />
+            <span className="text-xl font-bold tracking-tight text-indigo-900 dark:text-indigo-200">Academeet</span>
+        </div>
 
-          <div className="space-y-1 text-center">
-            <CardTitle className="text-2xl font-bold tracking-tight">
+        <div className="mx-auto w-full max-w-sm">
+          <div className="mb-8 text-center flex flex-col items-center space-y-3">
+            <h2 className="text-3xl font-bold tracking-tight text-indigo-700 dark:text-indigo-500">
               Faculty Registration
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Create your professor account to manage consultations
-            </CardDescription>
+            </h2>
+            <div className="flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold tracking-wide text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-400">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              AUTHORIZED FACULTY ONLY
+            </div>
           </div>
 
-          {/* Authorization badge */}
-          <div className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-400">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Authorized Faculty Only
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          {/* Server-side error banner */}
           {state.error && (
-            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400">
               {state.error}
             </div>
           )}
 
           <Form {...form}>
             <form action={formAction} className="space-y-4">
-              {/* Hidden role field — always "professor" */}
               <input type="hidden" name="role" value="professor" />
 
-              {/* Full Name */}
               <FormField
                 control={form.control}
                 name="full_name"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Full Name
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Dr. Maria Santos"
                         autoComplete="name"
+                        className="bg-transparent border-dashed border-2 border-zinc-300 focus-visible:border-indigo-500 focus-visible:ring-0 dark:border-zinc-700 dark:focus-visible:border-indigo-500 shadow-none px-4 py-5 text-sm"
                         {...field}
                       />
                     </FormControl>
@@ -119,16 +131,18 @@ export default function ProfessorSignUpPage() {
                 )}
               />
 
-              {/* Faculty ID */}
               <FormField
                 control={form.control}
                 name="id_number"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Faculty ID Number</FormLabel>
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Faculty ID Number
+                    </FormLabel>
                     <FormControl>
                       <Input
                         placeholder="FAC-2024-001"
+                        className="bg-transparent border-dashed border-2 border-zinc-300 focus-visible:border-indigo-500 focus-visible:ring-0 dark:border-zinc-700 dark:focus-visible:border-indigo-500 shadow-none px-4 py-5 text-sm"
                         {...field}
                       />
                     </FormControl>
@@ -137,18 +151,20 @@ export default function ProfessorSignUpPage() {
                 )}
               />
 
-              {/* Email */}
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Institutional Email</FormLabel>
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Institutional Email
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="email"
                         placeholder="professor@university.edu"
                         autoComplete="email"
+                        className="bg-transparent border-dashed border-2 border-zinc-300 focus-visible:border-indigo-500 focus-visible:ring-0 dark:border-zinc-700 dark:focus-visible:border-indigo-500 shadow-none px-4 py-5 text-sm"
                         {...field}
                       />
                     </FormControl>
@@ -157,18 +173,20 @@ export default function ProfessorSignUpPage() {
                 )}
               />
 
-              {/* Password */}
               <FormField
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-xs font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">
+                      Password
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="password"
                         placeholder="••••••••"
                         autoComplete="new-password"
+                        className="bg-transparent border-dashed border-2 border-zinc-300 focus-visible:border-indigo-500 focus-visible:ring-0 dark:border-zinc-700 dark:focus-visible:border-indigo-500 shadow-none px-4 py-5 text-sm"
                         {...field}
                       />
                     </FormControl>
@@ -177,16 +195,15 @@ export default function ProfessorSignUpPage() {
                 )}
               />
 
-              {/* Submit */}
               <Button
                 type="submit"
-                className="w-full cursor-pointer bg-linear-to-r from-blue-600 to-indigo-600 font-medium text-white shadow-md shadow-blue-600/20 transition-all hover:shadow-lg hover:shadow-blue-600/30 hover:brightness-110"
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base shadow-lg shadow-indigo-600/20 transition-all rounded-md mt-4"
                 disabled={isPending}
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating account…
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Creating account...
                   </>
                 ) : (
                   "Register as Professor"
@@ -195,17 +212,23 @@ export default function ProfessorSignUpPage() {
             </form>
           </Form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <p className="mt-8 text-center text-sm text-zinc-500">
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="font-medium text-blue-600 underline-offset-4 hover:underline dark:text-blue-400"
-            >
-              Log in
+            <a href="/login" className="text-indigo-600 font-semibold hover:underline">
+               Log in
             </a>
           </p>
-        </CardContent>
-      </Card>
+
+          <div className="mt-10 text-center text-xs font-medium text-zinc-400">
+             <span className="italic">In partner with</span>
+             <div className="flex justify-center items-center mt-2 gap-2 text-zinc-600 dark:text-zinc-300">
+                <GraduationCap className="h-4 w-4" />
+                <span className="font-bold tracking-tight text-sm">Academeet</span>
+             </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 }

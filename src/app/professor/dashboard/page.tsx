@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/card";
 import { CreateWindowForm } from "@/components/professor/CreateWindowForm";
 import { BookedSlotDialog } from "@/components/professor/BookedSlotDialog";
+import { DeleteWindowButton } from "@/components/professor/DeleteWindowButton";
+import { EditWindowDialog } from "@/components/professor/EditWindowDialog";
 import { Header } from "@/components/layout/Header";
 
 import type { UserRole } from "@/types/database";
@@ -178,13 +180,33 @@ export default async function ProfessorDashboardPage() {
                         <CalendarDays className="h-4 w-4 text-blue-600" />
                         {format(parseISO(w.date), "EEEE, MMMM d, yyyy")}
                       </CardTitle>
-                      <span className="text-sm text-muted-foreground">
-                        {bookedCount}/{slots.length} booked
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground mr-2">
+                          {bookedCount}/{slots.length} booked
+                        </span>
+                        <EditWindowDialog
+                          windowId={w.id}
+                          initialDate={w.date}
+                          initialStartTime={w.start_time}
+                          initialEndTime={w.end_time}
+                          hasBookedSlots={bookedCount > 0}
+                        />
+                        <DeleteWindowButton windowId={w.id} />
+                      </div>
                     </div>
                     <CardDescription className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
-                      {w.start_time.slice(0, 5)} — {w.end_time.slice(0, 5)}
+                      {slots.length > 0 ? (
+                        <>
+                          {format(parseISO(slots[0].start_time), "h:mm a")} –{" "}
+                          {format(
+                            parseISO(slots[slots.length - 1].end_time),
+                            "h:mm a"
+                          )}
+                        </>
+                      ) : (
+                        "No time range"
+                      )}
                     </CardDescription>
                   </CardHeader>
 
