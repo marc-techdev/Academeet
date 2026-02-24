@@ -1,10 +1,26 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, Calendar } from "lucide-react";
+import { Bell, Search, Calendar, Clock as ClockIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { SlotStatus } from "@/types/database";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+
+function LiveClock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white rounded-full border border-zinc-200 shadow-sm text-sm font-medium text-zinc-600 mr-auto" title="Current Time">
+      <ClockIcon className="w-4 h-4 text-zinc-400" />
+      {format(time, "h:mm:ss a")}
+    </div>
+  );
+}
 
 interface NotificationSlot {
   id: string;
@@ -44,18 +60,20 @@ export function ProfessorHeaderActions({ bookedSlots }: { bookedSlots: Notificat
   }, []);
 
   return (
-    <div className="flex items-center gap-3 relative" ref={dropdownRef}>
+    <div className="flex flex-row-reverse sm:flex-row items-center gap-3 relative" ref={dropdownRef}>
+      <LiveClock />
+      
       <button 
         onClick={() => setShowDropdown(!showDropdown)}
-        className="relative h-10 w-10 bg-white rounded-full shadow-sm border border-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-900 transition-colors" 
+        className="relative h-10 w-10 shrink-0 bg-white rounded-full shadow-sm border border-zinc-100 flex items-center justify-center text-zinc-500 hover:text-zinc-900 transition-colors" 
         title="Notifications"
       >
         <Bell className="w-5 h-5" />
         {bookedSlots.length > 0 && (
-          <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#ff5757] text-[10px] font-bold text-white ring-2 ring-white">
-            {bookedSlots.length}
-          </span>
-        )}
+           <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#ff5757] text-[10px] font-bold text-white ring-2 ring-white">
+             {bookedSlots.length}
+           </span>
+         )}
       </button>
       
       {/* Search Bar */}

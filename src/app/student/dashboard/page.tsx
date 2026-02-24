@@ -1,20 +1,20 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
-import { Header } from "@/components/layout/Header";
+import { StudentSidebar } from "@/components/student/StudentSidebar";
 import {
-  SlotGrid,
+  StudentDashboardLayout,
   type WindowData,
   type SlotData,
   type ProfessorProfile,
-} from "@/components/student/SlotGrid";
+} from "@/components/student/StudentDashboardLayout";
 
-import type { UserRole, SlotStatus } from "@/types/database";
+import type { UserRole } from "@/types/database";
 
 /**
  * Student Dashboard — Server Component.
  * Fetches upcoming consultation windows, their slots, and professor
- * profiles, then hands everything to the real-time `SlotGrid` client.
+ * profiles, then hands everything to the real-time `StudentDashboardLayout` client.
  */
 export default async function StudentDashboardPage() {
   const supabase = await createClient();
@@ -39,7 +39,7 @@ export default async function StudentDashboardPage() {
 
   const { data: windows } = await supabase
     .from("consultation_windows")
-    .select("id, date, start_time, end_time, professor_id")
+    .select("id, date, start_time, end_time, professor_id, topic")
     .gte("date", today)
     .order("date", { ascending: true })
     .returns<WindowData[]>();
@@ -71,29 +71,20 @@ export default async function StudentDashboardPage() {
 
   // ── Render ────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-cyan-50 dark:bg-zinc-950 text-cyan-900 dark:text-zinc-50">
-      <Header variant="student" />
+    <div className="flex h-screen w-full overflow-hidden bg-white text-zinc-900">
+      
+      {/* Primary Slim Navigation */}
+      <StudentSidebar studentName={profile.full_name} />
 
-      {/* Main */}
-      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-10">
-        <div className="mb-8 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-cyan-900 dark:text-zinc-50">
-            Welcome, {profile.full_name} 👋
-          </h1>
-          <p className="text-cyan-700 dark:text-zinc-400">
-            Browse available consultation slots and book your next appointment.
-            Slots update in <span className="font-medium text-green-600 dark:text-green-400">real-time</span> — no refresh needed.
-          </p>
-        </div>
+      {/* Main Structural Wrapper (Secondary Sidebar + Big Calendar) */}
+      <StudentDashboardLayout
+        initialWindows={windows ?? []}
+        initialSlots={slots ?? []}
+        professors={professors ?? []}
+        currentUserId={user.id}
+        studentName={profile.full_name}
+      />
 
-        {/* Real-time slot grid */}
-        <SlotGrid
-          initialWindows={windows ?? []}
-          initialSlots={slots ?? []}
-          professors={professors ?? []}
-          currentUserId={user.id}
-        />
-      </main>
     </div>
   );
 }

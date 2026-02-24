@@ -47,6 +47,11 @@ export default async function ProfessorDashboardPage() {
 
   if (!user) redirect("/login");
 
+  // ── Fetch profile and windows+slots in parallel ───────────
+  // Note: we can't reliably put `supabase` queries into Promise.all if they use the same
+  // un-awaited client context in some older Supabase versions, but here it's safe.
+  // Alternatively, we get the profile first, then get the windows + slots in one query!
+
   const { data: profile } = await supabase
     .from("users")
     .select("full_name, email, role")
@@ -55,36 +60,45 @@ export default async function ProfessorDashboardPage() {
 
   if (!profile || profile.role !== "professor") redirect("/login");
 
-  // ── Fetch windows + slots ─────────────────────────────────
-  const { data: windows } = await supabase
+  // Fetch windows and their nested slots in one go using foreign key relationship
+  const { data: windowsData } = await supabase
     .from("consultation_windows")
-    .select("id, date, start_time, end_time")
+    .select(`
+      id, date, start_time, end_time, topic,
+      slots (
+        id, window_id, start_time, end_time, status, student_id, agenda,
+        student:users!student_id(full_name, id_number)
+      )
+    `)
     .eq("professor_id", user.id)
     .order("date", { ascending: true })
     .returns<
-      { id: string; date: string; start_time: string; end_time: string }[]
+      {
+        id: string;
+        date: string;
+        start_time: string;
+        end_time: string;
+        topic: string;
+        slots: SlotWithStudent[];
+      }[]
     >();
 
-  // Fetch all slots for this professor — join with the student profile
-  const windowIds = windows?.map((w) => w.id) ?? [];
+  const windows = windowsData?.map(w => ({
+    id: w.id,
+    date: w.date,
+    start_time: w.start_time,
+    end_time: w.end_time,
+    topic: w.topic,
+  })) ?? [];
 
-  const { data: allSlots } = windowIds.length
-    ? await supabase
-        .from("slots")
-        .select(
-          "id, window_id, start_time, end_time, status, student_id, agenda, student:users!student_id(full_name, id_number)"
-        )
-        .in("window_id", windowIds)
-        .order("start_time", { ascending: true })
-        .returns<SlotWithStudent[]>()
-    : { data: [] as SlotWithStudent[] };
-
-  // Group slots by window
+  // Flatten slots and group them by window
+  const allSlots: SlotWithStudent[] = [];
   const slotsByWindow = new Map<string, SlotWithStudent[]>();
-  for (const slot of allSlots ?? []) {
-    const arr = slotsByWindow.get(slot.window_id) ?? [];
-    arr.push(slot);
-    slotsByWindow.set(slot.window_id, arr);
+
+  for (const w of windowsData ?? []) {
+    const wSlots = w.slots ?? [];
+    slotsByWindow.set(w.id, wSlots);
+    allSlots.push(...wSlots);
   }
 
   // ── Status color helper ───────────────────────────────────
@@ -118,12 +132,31 @@ export default async function ProfessorDashboardPage() {
   }
 
   // ── Notification Logic ────────────────────────────────────
-  const windowsMap = new Map((windows ?? []).map(w => [w.id, w]));
-  const slotsWithDate = (allSlots ?? []).map(slot => ({
+  const windowsMap = new Map((windows ?? []).map((w) => [w.id, w]));
+  const slotsWithDate = (allSlots ?? []).map((slot) => ({
     ...slot,
-    date: windowsMap.get(slot.window_id)?.date || "Unknown Date"
+    date: windowsMap.get(slot.window_id)?.date || "Unknown Date",
   }));
-  const bookedSlotsList = slotsWithDate.filter(s => s.status === "booked");
+
+  const now = new Date();
+  const bookedSlotsList = slotsWithDate.filter((s) => {
+    if (s.status !== "booked") return false;
+
+    // Build the Full Date-Time string robustly
+    let endStr = s.end_time;
+    if (!endStr.includes("T")) {
+      endStr = `${s.date}T${s.end_time}`;
+    }
+
+    try {
+      const parsedEnd = parseISO(endStr);
+      // Filter out slots that have already finished
+      if (parsedEnd < now) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  });
 
   // ── Render ────────────────────────────────────────────────
   return (

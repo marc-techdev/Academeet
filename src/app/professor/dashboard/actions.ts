@@ -12,6 +12,8 @@ const windowSchema = z
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format."),
     start_time: z.string().regex(/^\d{2}:\d{2}$/, "Invalid start time."),
     end_time: z.string().regex(/^\d{2}:\d{2}$/, "Invalid end time."),
+    duration: z.number().min(10).max(60),
+    topic: z.string().min(1, "Topic is required."),
   })
   .refine(
     (data) => data.end_time > data.start_time,
@@ -28,10 +30,10 @@ export interface CreateWindowResult {
 
 /**
  * Server Action — creates a consultation window and auto-generates
- * 30-minute slots for the given time range.
+ * slots for the given time range and duration.
  *
  * @param _prev  Previous action state (unused, required by useActionState).
- * @param formData  FormData with `date`, `start_time`, `end_time`.
+ * @param formData  FormData with `date`, `start_time`, `end_time`, `duration`.
  */
 export async function createConsultationWindow(
   _prev: CreateWindowResult,
@@ -41,6 +43,8 @@ export async function createConsultationWindow(
     date: formData.get("date") as string,
     start_time: formData.get("start_time") as string,
     end_time: formData.get("end_time") as string,
+    topic: formData.get("topic") as string,
+    duration: Number(formData.get("duration")),
   };
 
   // ── 1. Validate ───────────────────────────────────────────
@@ -49,7 +53,7 @@ export async function createConsultationWindow(
     return { error: parsed.error.issues[0].message };
   }
 
-  const { date, start_time, end_time } = parsed.data;
+  const { date, start_time, end_time, duration, topic } = parsed.data;
 
   // ── 2. Get authenticated user ─────────────────────────────
   const supabase = await createClient();
@@ -61,7 +65,36 @@ export async function createConsultationWindow(
     return { error: "You must be logged in." };
   }
 
-  // ── 3. Insert consultation window ─────────────────────────
+  // ── 3. Check Math FIRST to prevent orphaned windows ───────
+  const baseDate = parse(date, "yyyy-MM-dd", new Date());
+  const startDt = parse(start_time, "HH:mm", baseDate);
+  const endDt = parse(end_time, "HH:mm", baseDate);
+  const now = new Date();
+
+  if (isBefore(startDt, now)) {
+    return { error: "Consultation window cannot be scheduled in the past." };
+  }
+
+  const pendingSlots: {
+    start_time: string;
+    end_time: string;
+  }[] = [];
+  let cursor = startDt;
+
+  while (isBefore(addMinutes(cursor, duration), endDt) || addMinutes(cursor, duration).getTime() === endDt.getTime()) {
+    const slotEnd = addMinutes(cursor, duration);
+    pendingSlots.push({
+      start_time: cursor.toISOString(),
+      end_time: slotEnd.toISOString(),
+    });
+    cursor = slotEnd;
+  }
+
+  if (pendingSlots.length === 0) {
+    return { error: `Time range is too short for at least one ${duration}-minute slot.` };
+  }
+
+  // ── 4. Insert consultation window ─────────────────────────
   const { data: window, error: windowError } = await supabase
     .from("consultation_windows")
     .insert({
@@ -69,6 +102,7 @@ export async function createConsultationWindow(
       date,
       start_time: `${start_time}:00`,   // TIME expects HH:MM:SS
       end_time: `${end_time}:00`,
+      topic,
     } as never)
     .select("id")
     .single<{ id: string }>();
@@ -77,40 +111,17 @@ export async function createConsultationWindow(
     return { error: windowError?.message ?? "Failed to create window." };
   }
 
-  // ── 4. Calculate 30-minute intervals ──────────────────────
-  const baseDate = parse(date, "yyyy-MM-dd", new Date());
-  const startDt = parse(start_time, "HH:mm", baseDate);
-  const endDt = parse(end_time, "HH:mm", baseDate);
+  // ── 5. Batch insert slots map ──────────────────────────────
+  const slotsToInsert = pendingSlots.map(s => ({
+    ...s,
+    window_id: window.id,
+    professor_id: user.id,
+    status: "open",
+  }));
 
-  const slots: {
-    window_id: string;
-    professor_id: string;
-    start_time: string;
-    end_time: string;
-    status: "open";
-  }[] = [];
-  let cursor = startDt;
-
-  while (isBefore(addMinutes(cursor, 30), endDt) || addMinutes(cursor, 30).getTime() === endDt.getTime()) {
-    const slotEnd = addMinutes(cursor, 30);
-    slots.push({
-      window_id: window.id,
-      professor_id: user.id,
-      start_time: cursor.toISOString(),
-      end_time: slotEnd.toISOString(),
-      status: "open",
-    });
-    cursor = slotEnd;
-  }
-
-  if (slots.length === 0) {
-    return { error: "Time range is too short for at least one 30-minute slot." };
-  }
-
-  // ── 5. Batch insert slots ─────────────────────────────────
   const { error: slotsError } = await supabase
     .from("slots")
-    .insert(slots as never[]);
+    .insert(slotsToInsert as never[]);
 
   if (slotsError) {
     return { error: slotsError.message };
@@ -119,7 +130,7 @@ export async function createConsultationWindow(
   // ── 6. Revalidate and return ──────────────────────────────
   revalidatePath("/professor/dashboard");
 
-  return { success: true, slotsCreated: slots.length };
+  return { success: true, slotsCreated: pendingSlots.length };
 }
 
 export interface DeleteWindowResult {
@@ -168,6 +179,8 @@ export async function editConsultationWindow(
     date: formData.get("date") as string,
     start_time: formData.get("start_time") as string,
     end_time: formData.get("end_time") as string,
+    topic: formData.get("topic") as string,
+    duration: Number(formData.get("duration")),
   };
 
   // 1. Validate form data
@@ -176,7 +189,7 @@ export async function editConsultationWindow(
     return { error: parsed.error.issues[0].message };
   }
 
-  const { date, start_time, end_time } = parsed.data;
+  const { date, start_time, end_time, duration, topic } = parsed.data;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -197,31 +210,15 @@ export async function editConsultationWindow(
     return { error: "Cannot edit this window because it already has booked appointments. Please cancel them first or create a new window." };
   }
 
-  // 3. Delete existing (open) slots for this window
-  const { error: deleteSlotsError } = await supabase
-    .from("slots")
-    .delete()
-    .eq("window_id", windowId);
-
-  if (deleteSlotsError) return { error: "Failed to clear old slots." };
-
-  // 4. Update the consultation window itself
-  const { error: updateWindowError } = await supabase
-    .from("consultation_windows")
-    .update({
-      date,
-      start_time: `${start_time}:00`,
-      end_time: `${end_time}:00`,
-    } as never)
-    .eq("id", windowId)
-    .eq("professor_id", user.id); // Double check RLS/ownership
-
-  if (updateWindowError) return { error: "Failed to update window." };
-
-  // 5. Generate new slots
+  // 3. Math calculation for new slots FIRST
   const baseDate = parse(date, "yyyy-MM-dd", new Date());
   const startDt = parse(start_time, "HH:mm", baseDate);
   const endDt = parse(end_time, "HH:mm", baseDate);
+  const now = new Date();
+
+  if (isBefore(startDt, now)) {
+    return { error: "Consultation window cannot be scheduled in the past." };
+  }
 
   const slots: {
     window_id: string;
@@ -232,8 +229,8 @@ export async function editConsultationWindow(
   }[] = [];
   let cursor = startDt;
 
-  while (isBefore(addMinutes(cursor, 30), endDt) || addMinutes(cursor, 30).getTime() === endDt.getTime()) {
-    const slotEnd = addMinutes(cursor, 30);
+  while (isBefore(addMinutes(cursor, duration), endDt) || addMinutes(cursor, duration).getTime() === endDt.getTime()) {
+    const slotEnd = addMinutes(cursor, duration);
     slots.push({
       window_id: windowId,
       professor_id: user.id,
@@ -245,9 +242,32 @@ export async function editConsultationWindow(
   }
 
   if (slots.length === 0) {
-    return { error: "Time range is too short for at least one 30-minute slot." };
+    return { error: `Time range is too short for at least one ${duration}-minute slot.` };
   }
 
+  // 4. Delete existing (open) slots for this window
+  const { error: deleteSlotsError } = await supabase
+    .from("slots")
+    .delete()
+    .eq("window_id", windowId);
+
+  if (deleteSlotsError) return { error: "Failed to clear old slots." };
+
+  // 5. Update the consultation window itself
+  const { error: updateWindowError } = await supabase
+    .from("consultation_windows")
+    .update({
+      date,
+      start_time: `${start_time}:00`,
+      end_time: `${end_time}:00`,
+      topic,
+    } as never)
+    .eq("id", windowId)
+    .eq("professor_id", user.id); // Double check RLS/ownership
+
+  if (updateWindowError) return { error: "Failed to update window." };
+
+  // 6. Generate fresh slots physically in DB
   const { error: insertSlotsError } = await supabase
     .from("slots")
     .insert(slots as never[]);
@@ -279,17 +299,11 @@ export async function cancelConsultationBooking(slotId: string, reason?: string)
 
   if (fetchError) return { error: fetchError.message };
 
-  type SlotRecord = { agenda: string | null };
-  const slotRecord = slot as SlotRecord | null;
-
-  let updatedAgenda = slotRecord?.agenda || "";
-  if (reason) {
-    updatedAgenda = `[CANCELLED: ${reason}]\n\nOriginal Agenda:\n${updatedAgenda || "None"}`;
-  }
-
+  // The user requested that when a professor cancels a booking, it should just revert to "open" 
+  // so another student can take the spot. We clear the student and agenda.
   const { error } = await supabase
     .from("slots")
-    .update({ status: "cancelled", student_id: null, agenda: updatedAgenda } as never)
+    .update({ status: "open", student_id: null, agenda: null } as never)
     .eq("id", slotId);
 
   if (error) {

@@ -39,7 +39,7 @@ export function ProfessorSidebar({ professorName, department = "Faculty Member" 
   ];
 
   return (
-    <aside className="w-72 bg-white flex-col pt-8 pb-6 px-6 shadow-sm z-10 hidden md:flex h-full sticky top-0 border-r border-zinc-100">
+    <aside className="w-72 bg-white flex-col pt-8 pb-6 px-6 shadow-sm z-10 hidden md:flex h-screen sticky top-0 border-r border-zinc-100">
       {/* Brand */}
       <div className="flex items-center gap-2 mb-10 px-2 text-[#ff5757]">
         <GraduationCap className="h-6 w-6" />

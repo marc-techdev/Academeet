@@ -3,13 +3,14 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
 import { format, parseISO, isAfter } from "date-fns";
 import * as anime from "animejs";
-import { Plus, Calendar, ChevronDown, CheckCircle2, Clock, Trash2, Edit2, User as UserIcon } from "lucide-react";
+import { Plus, Calendar, ChevronDown, CheckCircle2, Clock, Trash2, Edit2, User as UserIcon, Eye, FileText } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 
 import { CreateWindowForm } from "@/components/professor/CreateWindowForm";
 import { BookedSlotDialog } from "@/components/professor/BookedSlotDialog";
@@ -37,6 +38,7 @@ export interface WindowData {
   date: string;
   start_time: string;
   end_time: string;
+  topic: string;
 }
 
 interface ProfessorBookingsGridProps {
@@ -49,6 +51,7 @@ interface FlattenedSlot extends SlotWithStudent {
   date: string;
   window_start: string;
   window_end: string;
+  window_topic: string;
 }
 
 /**
@@ -89,7 +92,8 @@ export function ProfessorBookingsGrid({
            student: null,
            date: w.date,
            window_start: w.start_time,
-           window_end: w.end_time
+           window_end: w.end_time,
+           window_topic: w.topic
          });
       } else {
         windowSlots.forEach(s => {
@@ -97,7 +101,8 @@ export function ProfessorBookingsGrid({
             ...s,
             date: w.date,
             window_start: w.start_time,
-            window_end: w.end_time
+            window_end: w.end_time,
+            window_topic: w.topic
           });
         });
       }
@@ -137,6 +142,12 @@ export function ProfessorBookingsGrid({
             isUpcoming = false;
           } else {
             isUpcoming = isAfter(parsed, now) || slotParsedTime === now.getTime();
+          }
+
+          // Important Fix: If we are looking at the "past" tab, we only want to see actual "booked" 
+          // appointments that happened. We do NOT want to see "open" unbooked slots lingering in the past.
+          if (!isUpcoming && slot.status === "open") {
+             return false;
           }
         }
       } catch (e) {
@@ -285,10 +296,58 @@ export function ProfessorBookingsGrid({
       <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-zinc-100 flex-1 relative flex flex-col">
         
         {/* List Header */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-100">
-          <h2 className="text-lg font-bold text-zinc-800">
-            {filteredSlots.length} Appointment{filteredSlots.length !== 1 && 's'}
-          </h2>
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-100 flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-bold text-zinc-800">
+              {filteredSlots.length} Appointment{filteredSlots.length !== 1 && 's'}
+            </h2>
+            {activeTab === "upcoming" && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5 text-zinc-600 bg-white border-zinc-200 hover:text-blue-600 hover:border-blue-200">
+                    <FileText className="w-3.5 h-3.5" />
+                    <span className="text-xs font-semibold">View Summary</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
+                  <DialogHeader>
+                    <DialogTitle>Upcoming Bookings Summary</DialogTitle>
+                    <DialogDescription>A consolidated view of mapped dates, times, students, and agendas.</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex-1 overflow-y-auto mt-2 pr-2 py-2 space-y-3">
+                    {filteredSlots.filter(s => s.status === "booked" && s.student).length === 0 ? (
+                      <p className="text-zinc-500 text-sm text-center py-10">No upcoming booked appointments currently available.</p>
+                    ) : (
+                      filteredSlots.filter(s => s.status === "booked" && s.student).map(slot => {
+                        const startDt = slot.start_time.includes("T") ? slot.start_time : `${slot.date}T${slot.start_time}`;
+                        const endDt = slot.end_time.includes("T") ? slot.end_time : `${slot.date}T${slot.end_time}`;
+                        return (
+                          <div key={slot.id} className="p-4 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-white transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-3">
+                              <div>
+                                <h4 className="font-bold text-zinc-800 text-base">{slot.student!.full_name}</h4>
+                                <div className="text-xs text-zinc-500 mt-0.5 space-x-1">
+                                  <span className="font-medium text-zinc-700">{format(parseISO(startDt), "MMM d, yyyy")}</span>
+                                  <span>•</span>
+                                  <span>{format(parseISO(startDt), "h:mm a")} - {format(parseISO(endDt), "h:mm a")}</span>
+                                  <span>•</span>
+                                  <span className="font-medium text-blue-600">{slot.window_topic}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-zinc-700 whitespace-pre-wrap leading-relaxed">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">Agenda</span>
+                              {slot.agenda || <span className="italic text-zinc-400">No agenda specified.</span>}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <div className="relative inline-block text-left">
               <select
@@ -405,9 +464,12 @@ export function ProfessorBookingsGrid({
                       {/* Date & Time */}
                       <div className={`sm:w-1/4 sm:min-w-[180px] shrink-0 border-b sm:border-b-0 sm:border-r border-zinc-200 pb-3 sm:pb-0 sm:pr-4 ${slot.status === "cancelled" ? "opacity-60" : ""}`}>
                         <div className={`font-bold mb-1 ${slot.status === "cancelled" ? "text-zinc-500 line-through" : "text-zinc-900"}`}>{dayMonthStr}</div>
-                        <div className={`text-sm font-medium ${slot.status === "cancelled" ? "text-red-400 line-through" : "text-zinc-500"}`}>
+                        <div className={`text-sm font-medium ${slot.status === "cancelled" ? "text-red-400 line-through" : "text-zinc-500"} mb-2`}>
                           {startTimeStr} - {endTimeStr}
                         </div>
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-none font-semibold">
+                          {slot.window_topic}
+                        </Badge>
                       </div>
 
                        {/* Patient / Details */}
@@ -426,9 +488,31 @@ export function ProfessorBookingsGrid({
                                ) : <span className="text-zinc-400 italic">N/A</span>)}
                             </div>
                           </div>
-                         <div>
-                           <div className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase mb-1">Agenda</div>
-                           <div className="font-semibold text-zinc-800 truncate">
+                         <div className="min-w-0">
+                           <div className="flex items-center gap-2 mb-1">
+                             <div className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">Agenda</div>
+                             {slot.agenda && (
+                               <Dialog>
+                                 <DialogTrigger asChild>
+                                   <button className="text-zinc-400 hover:text-blue-600 transition-colors" title="View full agenda">
+                                     <Eye className="w-3.5 h-3.5" />
+                                   </button>
+                                 </DialogTrigger>
+                                 <DialogContent className="sm:max-w-md">
+                                   <DialogHeader>
+                                     <DialogTitle>Consultation Agenda</DialogTitle>
+                                     <DialogDescription>
+                                       Topic: {slot.window_topic}
+                                     </DialogDescription>
+                                   </DialogHeader>
+                                   <div className="mt-4 p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-zinc-700 text-sm whitespace-pre-wrap leading-relaxed max-h-[60vh] overflow-y-auto">
+                                     {slot.agenda}
+                                   </div>
+                                 </DialogContent>
+                               </Dialog>
+                             )}
+                           </div>
+                           <div className="font-semibold text-zinc-800 truncate text-sm">
                              {slot.agenda || <span className="text-zinc-400 font-normal">No agenda specified</span>}
                            </div>
                          </div>
@@ -458,16 +542,56 @@ export function ProfessorBookingsGrid({
                           </>
                         ) : slot.status === "cancelled" ? (
                           <>
-                            <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm opacity-80 cursor-not-allowed">
-                               Revoked
-                            </div>
+                            {slot.student ? (
+                                <BookedSlotDialog
+                                  slot={{
+                                    id: slot.id,
+                                    start_time: slot.start_time,
+                                    end_time: slot.end_time,
+                                    agenda: slot.agenda,
+                                    studentName: slot.student.full_name,
+                                    studentIdNumber: slot.student.id_number,
+                                  }}
+                                  readonly={true}
+                                  className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm transition-colors hover:bg-red-100/80 cursor-pointer"
+                                  customTrigger={
+                                    <>
+                                      <Clock className="w-4 h-4" /> Revoked
+                                    </>
+                                  }
+                                />
+                            ) : (
+                               <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm opacity-80 cursor-not-allowed">
+                                 Revoked
+                               </div>
+                            )}
                             {activeTab === "past" && <DeletePastSlotButton slotId={slot.id} />}
                           </>
                         ) : activeTab === "past" ? (
                           <>
-                            <div className="bg-zinc-100/50 border border-zinc-200 text-zinc-400 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm opacity-80 cursor-not-allowed">
-                               Unbooked
-                            </div>
+                            {slot.student ? (
+                                <BookedSlotDialog
+                                  slot={{
+                                    id: slot.id,
+                                    start_time: slot.start_time,
+                                    end_time: slot.end_time,
+                                    agenda: "This appointment expired or passed without action.",
+                                    studentName: slot.student.full_name,
+                                    studentIdNumber: slot.student.id_number,
+                                  }}
+                                  readonly={true}
+                                  className="bg-zinc-100/50 border border-zinc-200 text-zinc-500 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm transition-colors hover:bg-zinc-200/50 cursor-pointer"
+                                  customTrigger={
+                                    <>
+                                      <Clock className="w-4 h-4" /> Unbooked
+                                    </>
+                                  }
+                                />
+                            ) : (
+                               <div className="bg-zinc-100/50 border border-zinc-200 text-zinc-400 rounded-xl px-4 py-2 text-sm font-bold flex items-center gap-2 shadow-sm opacity-80 cursor-not-allowed">
+                                 Unbooked
+                               </div>
+                            )}
                             <DeletePastSlotButton slotId={slot.id} />
                           </>
                         ) : (
@@ -478,6 +602,7 @@ export function ProfessorBookingsGrid({
                               initialDate={slot.date}
                               initialStartTime={slot.window_start}
                               initialEndTime={slot.window_end}
+                              initialTopic={slot.window_topic}
                               hasBookedSlots={false}
                               customTrigger={
                                 <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-zinc-200 text-zinc-500 hover:text-blue-600 hover:border-blue-200"><Edit2 className="w-4 h-4"/></Button>

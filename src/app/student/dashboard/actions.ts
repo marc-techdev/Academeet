@@ -80,3 +80,61 @@ export async function bookSlot(
 
   return { success: true };
 }
+
+export async function updateBookingAgenda(
+  slotId: string,
+  agenda: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "You must be logged in." };
+
+  const { error } = await supabase
+    .from("slots")
+    .update({ agenda } as never)
+    .eq("id", slotId)
+    .eq("student_id", user.id); // ensure ownership
+
+  if (error) {
+    if (error.code === '42501') { // RLS violation
+      return { error: "You don't have permission to update this booking. Please ask the admin to update the Supabase RLS policies." };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/student/dashboard");
+  revalidatePath("/professor/dashboard");
+  return {};
+}
+
+export async function cancelBooking(
+  slotId: string
+): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "You must be logged in." };
+
+  // Re-open the slot
+  const { error } = await supabase
+    .from("slots")
+    .update({ 
+      status: "open",
+      student_id: null,
+      agenda: null
+    } as never)
+    .eq("id", slotId)
+    .eq("student_id", user.id);
+
+  if (error) {
+    if (error.code === '42501') { 
+       return { error: "RLS permissions prevent cancelling bookings. The DB RLS policy needs updating." };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/student/dashboard");
+  revalidatePath("/professor/dashboard");
+  return {};
+}

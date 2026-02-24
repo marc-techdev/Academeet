@@ -37,6 +37,7 @@ export interface ConsultationWindow {
   date: string;           // DATE  → ISO "YYYY-MM-DD"
   start_time: string;     // TIME  → "HH:MM:SS"
   end_time: string;       // TIME  → "HH:MM:SS"
+  topic: string;          // Added Topic Support
   created_at: string;
 }
 
@@ -74,6 +75,7 @@ export interface ConsultationWindowInsert {
   date: string;
   start_time: string;
   end_time: string;
+  topic?: string;
   created_at?: string;
 }
 
@@ -108,6 +110,7 @@ export interface ConsultationWindowUpdate {
   date?: string;
   start_time?: string;
   end_time?: string;
+  topic?: string;
 }
 
 /** Payload for updating a `slots` row. */

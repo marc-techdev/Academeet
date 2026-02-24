@@ -11,6 +11,7 @@ import { bookSlot, type BookSlotResult } from "@/app/student/dashboard/actions";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ interface BookingDialogProps {
   slotId: string;
   slotTime: string;          // human-readable label, e.g. "9:00 AM – 9:15 AM"
   professorName: string;
+  topic: string;             // Topic Context
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -55,6 +57,7 @@ export function BookingDialog({
   slotId,
   slotTime,
   professorName,
+  topic,
   open,
   onOpenChange,
 }: BookingDialogProps) {
@@ -93,16 +96,26 @@ export function BookingDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5 text-emerald-600" />
+          <DialogTitle className="flex items-center gap-3 text-xl tracking-tight">
+            <div className="p-2 bg-[#ff5757]/10 dark:bg-[#ff5757]/20 rounded-md">
+                <CalendarCheck className="h-5 w-5 text-[#ff5757]" />
+            </div>
             Reserve Slot
           </DialogTitle>
-          <DialogDescription>
-            <span className="font-medium text-foreground">{slotTime}</span>
-            {" with "}
-            <span className="font-medium text-foreground">
-              Prof. {professorName}
+          <DialogDescription className="flex flex-col gap-2 mt-1">
+            <span>
+              <span className="font-medium text-zinc-900 dark:text-white">{slotTime}</span>
+              {" with "}
+              <span className="font-medium text-zinc-900 dark:text-white">
+                Prof. {professorName}
+              </span>
             </span>
+            <div className="flex items-center gap-2 text-sm">
+              <span>Topic:</span>
+              <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-semibold px-2.5 py-1 shadow-sm pointer-events-none">
+                {topic}
+              </Badge>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

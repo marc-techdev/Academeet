@@ -25,7 +25,7 @@ export async function loginAction(
   const supabase = await createClient();
 
   // ── 1. Authenticate with Supabase Auth ────────────────────
-  const { error: authError } = await supabase.auth.signInWithPassword({
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -34,26 +34,28 @@ export async function loginAction(
     return { error: authError.message };
   }
 
-  // ── 2. Fetch the user's role from the public `users` table ──
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = authData.user;
   if (!user) {
     return { error: "Could not retrieve authenticated user." };
   }
 
-  let { data: profile } = await supabase
+  // ── 2. Fetch the user's role from the public `users` table ──
+  let { data: profile, error: profileError } = await supabase
     .from("users")
     .select("role")
     .eq("id", user.id)
     .single<{ role: UserRole }>();
 
+  // Handle case where query fails (e.g. no rows)
+  if (!profile && profileError?.code === 'PGRST116') {
+     profile = null;
+  }
+
   // ── 2b. Fallback: create profile from user_metadata ───────
   // This handles the case where the DB trigger didn't fire
   if (!profile && user.user_metadata) {
     const meta = user.user_metadata;
-    const { error: insertError } = await supabase
+    const { data: newProfile, error: insertError } = await supabase
       .from("users")
       .insert({
         id: user.id,
@@ -61,18 +63,13 @@ export async function loginAction(
         full_name: meta.full_name ?? "Unknown",
         id_number: meta.id_number ?? "000000",
         role: meta.role ?? "student",
-      } as never);
+      } as never)
+      .select("role")
+      .single<{ role: UserRole }>();
 
     if (insertError) {
       return { error: `Profile creation failed: ${insertError.message}` };
     }
-
-    // Re-fetch the profile
-    const { data: newProfile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single<{ role: UserRole }>();
 
     profile = newProfile;
   }
