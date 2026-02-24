@@ -3,11 +3,13 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { format, parseISO, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths } from "date-fns";
-import { ChevronLeft, ChevronRight, Search, Settings, Clock, GraduationCap } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Search, Settings, Clock, GraduationCap, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DaySlotsModal } from "./DaySlotsModal";
 import { BookingDialog } from "./BookingDialog";
 import { StudentManageBookingDialog } from "./StudentManageBookingDialog";
+import { StudentNotificationBell } from "./StudentNotificationBell";
 
 // Import types
 import type { SlotStatus } from "@/types/database";
@@ -46,33 +48,57 @@ interface StudentDashboardLayoutProps {
 }
 
 function safeParseDate(dateStr: string, timeStr: string): Date {
-  if (!timeStr) return new Date();
-  const d = parseISO(`${dateStr}T${timeStr.trim()}`);
-  if (isNaN(d.getTime())) {
-     // fallback
-     return new Date(`${dateStr} 00:00:00`);
+  if (!timeStr || !dateStr) return new Date();
+  
+  try {
+    // If Supabase gave us a full Timestamp (slots table), just read it natively
+    // The browser natively offsets an explicit UTC timestamp to the user's local zone.
+    if (timeStr.includes("T")) {
+       const d = new Date(timeStr);
+       if (!isNaN(d.getTime())) return d;
+    }
+
+    // Otherwise, brutally enforce Local Time parsing for raw "HH:mm:ss" strings (windows table)
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, min, sec] = timeStr.trim().split(":").map(Number);
+    const exactLocalTime = new Date(year, month - 1, day, hour || 0, min || 0, sec || 0);
+
+    if (isNaN(exactLocalTime.getTime())) throw new Error();
+
+    return exactLocalTime;
+  } catch (e) {
+    return new Date(`${dateStr} 00:00:00`);
   }
-  return d;
 }
 
 function safeFormatTime(dateStr: string, timeStr: string) {
-  if (!timeStr) return "Unknown";
+  if (!timeStr || !dateStr) return "Unknown";
+  
   try {
-    const d = parseISO(`${dateStr}T${timeStr.trim()}`);
-    if (isNaN(d.getTime())) {
-       // fallback manual parse
-       const parts = timeStr.split(":");
-       if (parts.length >= 2) {
-         let h = parseInt(parts[0], 10);
-         const m = parts[1];
-         const ampm = h >= 12 ? "PM" : "AM";
-         h = h % 12 || 12;
-         return `${h}:${m} ${ampm}`;
-       }
-       return timeStr;
+    if (timeStr.includes("T")) {
+       const d = new Date(timeStr);
+       if (!isNaN(d.getTime())) return format(d, "h:mm a");
     }
-    return format(d, "h:mm a");
+
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, min, sec] = timeStr.trim().split(":").map(Number);
+    
+    // Month is 0-indexed in JS Date
+    const exactLocalTime = new Date(year, month - 1, day, hour || 0, min || 0, sec || 0);
+
+    if (isNaN(exactLocalTime.getTime())) throw new Error();
+
+    return format(exactLocalTime, "h:mm a");
   } catch (e) {
+    // fallback manual parse
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      let h = parseInt(parts[0], 10);
+      const m = parts[1];
+      const ampm = h >= 12 ? "PM" : "AM";
+      h = h % 12 || 12;
+      return `${h}:${m} ${ampm}`;
+    }
     return timeStr;
   }
 }
@@ -93,7 +119,8 @@ export function StudentDashboardLayout({
   currentUserId,
   studentName,
 }: StudentDashboardLayoutProps) {
-  // Realtime slots state
+  // Realtime state
+  const [windows, setWindows] = useState<WindowData[]>(initialWindows);
   const [slots, setSlots] = useState<SlotData[]>(initialSlots);
   const [activeCategories, setActiveCategories] = useState<string[]>(Object.keys(CATEGORY_COLORS));
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -121,14 +148,38 @@ export function StudentDashboardLayout({
   const [selectedManageSlot, setSelectedManageSlot] = useState<SlotData | null>(null);
   const [selectedManageWindow, setSelectedManageWindow] = useState<WindowData | null>(null);
 
+  // Sidebar collapsible states
+  const [isMySchedulesOpen, setIsMySchedulesOpen] = useState(true);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(true);
+
   // ── Supabase Realtime subscription ──
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
-      .channel("slots-realtime-layout")
+      .channel("student-dashboard-realtime")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "slots" }, (payload) => {
           const updated = payload.new as SlotData;
-          setSlots((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+          setSlots((prev) => {
+              const oldSlot = prev.find(s => s.id === updated.id);
+              if (
+                 oldSlot && 
+                 oldSlot.status === "booked" && 
+                 oldSlot.student_id === currentUserId &&
+                 updated.status === "cancelled"
+              ) {
+                 toast.error(
+                   <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2 font-bold text-red-600">
+                         <AlertTriangle className="h-4 w-4" />
+                         Appointment Cancelled
+                      </div>
+                      <span className="text-zinc-700 text-sm">Your professor has cancelled an upcoming consultation slot. Check the Past Appointments log for details.</span>
+                   </div>,
+                   { duration: 8000 }
+                 );
+              }
+              return prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s));
+          });
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "slots" }, (payload) => {
           const inserted = payload.new as SlotData;
@@ -136,6 +187,17 @@ export function StudentDashboardLayout({
             if (prev.some((s) => s.id === inserted.id)) return prev;
             return [...prev, inserted];
           });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "consultation_windows" }, (payload) => {
+          const inserted = payload.new as WindowData;
+          setWindows((prev) => {
+            if (prev.some((w) => w.id === inserted.id)) return prev;
+            return [...prev, inserted];
+          });
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "consultation_windows" }, (payload) => {
+          const updated = payload.new as WindowData;
+          setWindows((prev) => prev.map((w) => (w.id === updated.id ? { ...w, ...updated } : w)));
       })
       .subscribe();
 
@@ -145,13 +207,22 @@ export function StudentDashboardLayout({
   }, []);
 
   // ── Data Computed ──
-  // Filter out cancelled windows to clean up the big calendar
+  // Filter out cancelled slots, and hide OPEN slots that are in the past
   const activeWindows = useMemo(() => {
-    return initialWindows.filter(w => {
+    return windows.filter(w => {
       const wSlots = slots.filter(s => s.window_id === w.id);
-      return wSlots.some(s => s.status === "open" || s.status === "booked");
+      return wSlots.some(s => {
+         // Always show booked slots, even if past (for history)
+         if (s.status === "booked") return true;
+         // If open, check if it's in the past
+         if (s.status === "open") {
+            const parsedStart = safeParseDate(w.date, s.start_time);
+            return parsedStart.getTime() > currentTime.getTime();
+         }
+         return false; // hide cancelled slots entirely
+      });
     });
-  }, [initialWindows, slots]);
+  }, [windows, slots, currentTime]);
 
   const windowsByDate = useMemo(() => {
     const map = new Map<string, WindowData[]>();
@@ -169,12 +240,24 @@ export function StudentDashboardLayout({
   const slotsByWindow = useMemo(() => {
     const map = new Map<string, SlotData[]>();
     for (const slot of slots) {
+      const window = windows.find(w => w.id === slot.window_id);
+      if (!window) continue;
+
+      // Drop open slots that are in the past so they don't even render
+      if (slot.status === "open") {
+         const parsedStart = safeParseDate(window.date, slot.start_time);
+         // Hide slots that expired strictly more than a minute ago 
+         if (parsedStart.getTime() <= currentTime.getTime() - 60000) {
+            continue;
+         }
+      }
+
       const arr = map.get(slot.window_id) ?? [];
       arr.push(slot);
       map.set(slot.window_id, arr);
     }
     return map;
-  }, [slots]);
+  }, [slots, windows, currentTime]);
 
   const profMap = useMemo(() => new Map(professors.map((p) => [p.id, p.full_name])), [professors]);
 
@@ -277,65 +360,91 @@ export function StudentDashboardLayout({
 
         {/* My Schedules */}
         <div className="p-6 pt-8 border-t border-zinc-100 flex-1">
-          <h3 className="text-zinc-900 font-bold tracking-tight mb-4 flex items-center justify-between text-sm uppercase">
-            My Schedules
-          </h3>
-          <div className="space-y-3">
-             {upcomingBookedSlots.length === 0 ? (
-                <p className="text-zinc-400 text-sm italic">No confirmed bookings.</p>
-             ) : (
-                upcomingBookedSlots.slice(0, 5).map(slot => {
-                   const win = activeWindows.find(w => w.id === slot.window_id);
-                   if(!win) return null;
-                   // Get color mapped by topic
-                   const bgColorClass = CATEGORY_COLORS[win.topic] ?? CATEGORY_COLORS["Other"];
-                   
-                   return (
-                     <div 
-                        key={slot.id} 
-                        onClick={() => {
-                           setSelectedManageSlot(slot);
-                           setSelectedManageWindow(win);
-                           setManageSlotOpen(true);
-                        }}
-                        className="flex items-start gap-3 group cursor-pointer p-2 -mx-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-100 transition-all"
-                     >
-                        <div className={`mt-1 h-3 w-3 rounded-full shrink-0 ${bgColorClass}`} />
-                        <div className="flex flex-col">
-                           <span className="text-zinc-700 font-semibold text-sm leading-tight group-hover:text-[#5438dc] transition-colors line-clamp-1">
-                              Consultation with Prof. {profMap.get(win.professor_id) ?? "Unknown"}
-                           </span>
-                           <span className="text-zinc-400 text-xs font-medium mt-0.5">
-                              {format(safeParseDate(win.date, slot.start_time), "MMM d")}, {safeFormatTime(win.date, slot.start_time)}
-                           </span>
-                        </div>
-                     </div>
-                   );
-                })
-             )}
+          <div 
+             className="flex items-center justify-between mb-4 cursor-pointer text-zinc-900 group"
+             onClick={() => setIsMySchedulesOpen(!isMySchedulesOpen)}
+          >
+            <h3 className="font-bold tracking-tight text-sm uppercase group-hover:text-[#5438dc] transition-colors">
+              My Schedules
+            </h3>
+            {isMySchedulesOpen ? (
+              <ChevronUp className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+            )}
           </div>
+          
+          {isMySchedulesOpen && (
+            <div className="space-y-3">
+               {upcomingBookedSlots.length === 0 ? (
+                  <p className="text-zinc-400 text-sm italic">No confirmed bookings.</p>
+               ) : (
+                  upcomingBookedSlots.slice(0, 5).map(slot => {
+                     const win = activeWindows.find(w => w.id === slot.window_id);
+                     if(!win) return null;
+                     // Get color mapped by topic
+                     const bgColorClass = CATEGORY_COLORS[win.topic] ?? CATEGORY_COLORS["Other"];
+                     
+                     return (
+                       <div 
+                          key={slot.id} 
+                          onClick={() => {
+                             setSelectedManageSlot(slot);
+                             setSelectedManageWindow(win);
+                             setManageSlotOpen(true);
+                          }}
+                          className="flex items-start gap-3 group cursor-pointer p-2 -mx-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-100 transition-all"
+                       >
+                          <div className={`mt-1 h-3 w-3 rounded-full shrink-0 ${bgColorClass}`} />
+                          <div className="flex flex-col">
+                             <span className="text-zinc-700 font-semibold text-sm leading-tight group-hover:text-[#5438dc] transition-colors line-clamp-1">
+                                Consultation with Prof. {profMap.get(win.professor_id) ?? "Unknown"}
+                             </span>
+                             <span className="text-zinc-400 text-xs font-medium mt-0.5">
+                                {format(safeParseDate(win.date, slot.start_time), "MMM d")}, {safeFormatTime(win.date, slot.start_time)}
+                             </span>
+                          </div>
+                       </div>
+                     );
+                  })
+               )}
+            </div>
+          )}
         </div>
 
         {/* Categories */}
         <div className="p-6 border-t border-zinc-100 pb-8">
-          <h3 className="text-zinc-900 font-bold tracking-tight mb-4 text-sm uppercase">
-             Categories
-          </h3>
-          <div className="space-y-3">
-             {Object.entries(CATEGORY_COLORS).map(([cat, colorClass]) => {
-                const isActive = activeCategories.includes(cat);
-                return (
-                   <div 
-                     key={cat} 
-                     onClick={() => toggleCategory(cat)}
-                     className={`flex items-center gap-3 cursor-pointer transition-opacity ${isActive ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
-                   >
-                     <div className={`h-2.5 w-2.5 rounded-full ${colorClass}`} />
-                     <span className={`text-sm font-semibold ${isActive ? "text-zinc-800" : "text-zinc-500"}`}>{cat}</span>
-                   </div>
-                );
-             })}
+          <div 
+             className="flex items-center justify-between mb-4 cursor-pointer text-zinc-900 group"
+             onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+          >
+            <h3 className="font-bold tracking-tight text-sm uppercase group-hover:text-[#5438dc] transition-colors">
+               Categories
+            </h3>
+            {isCategoriesOpen ? (
+              <ChevronUp className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+            )}
           </div>
+          
+          {isCategoriesOpen && (
+            <div className="space-y-3">
+               {Object.entries(CATEGORY_COLORS).map(([cat, colorClass]) => {
+                  const isActive = activeCategories.includes(cat);
+                  return (
+                     <div 
+                       key={cat} 
+                       onClick={() => toggleCategory(cat)}
+                       className={`flex items-center gap-3 cursor-pointer transition-opacity ${isActive ? "opacity-100" : "opacity-40 hover:opacity-70"}`}
+                     >
+                       <div className={`h-2.5 w-2.5 rounded-full ${colorClass}`} />
+                       <span className={`text-sm font-semibold ${isActive ? "text-zinc-800" : "text-zinc-500"}`}>{cat}</span>
+                     </div>
+                  );
+               })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -369,7 +478,9 @@ export function StudentDashboardLayout({
               
               <div className="h-8 w-px bg-zinc-200 hidden sm:block"></div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
+                 <StudentNotificationBell slots={slots} currentUserId={currentUserId} />
+                 
                  <div className="hidden sm:flex flex-col items-end">
                     <span className="text-sm font-bold text-zinc-900">{studentName}</span>
                     <span className="text-xs text-zinc-500 font-medium">Student</span>

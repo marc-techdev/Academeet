@@ -1,0 +1,83 @@
+[
+  {
+    "id": "e3e5828a-aeb0-4e78-b468-0a3e4aa5d573",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "03:00:00",
+    "end_time": "03:59:00",
+    "created_at": "2026-02-23T17:59:33.659366+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "a3a24fe7-7f6b-4dd8-aaf9-4a6245ce6a2c",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "12:51:00",
+    "end_time": "12:52:00",
+    "created_at": "2026-02-24T04:51:35.697153+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "dd9f7ebf-8283-487d-bf46-eb83ce8b0e88",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "15:00:00",
+    "end_time": "16:00:00",
+    "created_at": "2026-02-24T06:00:12.636966+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "4b1f70a5-40ae-4c05-95a0-0e4c3290ec1d",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "14:18:00",
+    "end_time": "14:49:00",
+    "created_at": "2026-02-24T06:19:06.145996+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "d0dfa23e-779c-4957-b60d-89dee6c7d463",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "15:55:00",
+    "end_time": "16:21:00",
+    "created_at": "2026-02-24T07:55:46.739839+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "6820f12f-4071-4d60-adef-86770fd0d4fd",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "15:55:00",
+    "end_time": "16:25:00",
+    "created_at": "2026-02-24T07:55:54.640142+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "7e2da6b2-7d57-4f1f-bbaa-dc976edfc2ee",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "10:00:00",
+    "end_time": "11:00:00",
+    "created_at": "2026-02-24T10:17:16.571597+00:00",
+    "topic": "Practicum"
+  },
+  {
+    "id": "12b1820a-940e-44f7-8295-15889142fa9c",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "09:00:00",
+    "end_time": "10:00:00",
+    "created_at": "2026-02-24T10:17:41.469784+00:00",
+    "topic": "General"
+  },
+  {
+    "id": "b034d428-fd4e-4538-a43e-a13be263137b",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "date": "2026-02-24",
+    "start_time": "22:15:00",
+    "end_time": "23:14:00",
+    "created_at": "2026-02-24T14:14:47.6605+00:00",
+    "topic": "Thesis"
+  }
+]

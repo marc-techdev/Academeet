@@ -20,23 +20,33 @@ interface DaySlotsModalProps {
 }
 
 function safeFormatTime(dateStr: string, timeStr: string) {
-  if (!timeStr) return "Unknown";
+  if (!timeStr || !dateStr) return "Unknown";
+  
   try {
-    const d = parseISO(`${dateStr}T${timeStr.trim()}`);
-    if (isNaN(d.getTime())) {
-       // fallback manual parse
-       const parts = timeStr.split(":");
-       if (parts.length >= 2) {
-         let h = parseInt(parts[0], 10);
-         const m = parts[1];
-         const ampm = h >= 12 ? "PM" : "AM";
-         h = h % 12 || 12;
-         return `${h}:${m} ${ampm}`;
-       }
-       return timeStr;
+    if (timeStr.includes("T")) {
+       const d = new Date(timeStr);
+       if (!isNaN(d.getTime())) return format(d, "h:mm a");
     }
-    return format(d, "h:mm a");
+
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const [hour, min, sec] = timeStr.trim().split(":").map(Number);
+    
+    // Month is 0-indexed in JS Date
+    const exactLocalTime = new Date(year, month - 1, day, hour || 0, min || 0, sec || 0);
+
+    if (isNaN(exactLocalTime.getTime())) throw new Error();
+
+    return format(exactLocalTime, "h:mm a");
   } catch (e) {
+    // fallback manual parse
+    const parts = timeStr.split(":");
+    if (parts.length >= 2) {
+      let h = parseInt(parts[0], 10);
+      const m = parts[1];
+      const ampm = h >= 12 ? "PM" : "AM";
+      h = h % 12 || 12;
+      return `${h}:${m} ${ampm}`;
+    }
     return timeStr;
   }
 }

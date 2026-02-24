@@ -54,7 +54,41 @@ export async function bookSlot(
     return { error: "You must be logged in." };
   }
 
-  // ── 3. Update the slot (only if still open) ───────────────
+  // ── 3. Check if slot date/time is in the past ─────────────
+  // We need to fetch the slot and its parent window to get the true Date + Time.
+  const { data: slotData, error: slotError } = await supabase
+    .from("slots")
+    .select(`
+       id, start_time,
+       consultation_windows!window_id ( date )
+    `)
+    .eq("id", slot_id)
+    .single() as any;
+
+  if (slotError || !slotData) {
+     return { error: "Slot not found or could not be verified." };
+  }
+
+  // Combine window date + slot start time
+  const windowDateStr = slotData.consultation_windows?.date;
+  if (!windowDateStr) {
+     return { error: "Invalid slot time configuration." };
+  }
+
+  // Robustly parse the date
+  try {
+     const { parseISO } = await import("date-fns");
+     const slotDateTime = parseISO(`${windowDateStr}T${slotData.start_time.trim()}`);
+     if (slotDateTime.getTime() < new Date().getTime()) {
+        return { error: "This consultation time has already passed and cannot be booked." };
+     }
+  } catch (e) {
+     console.error("Failed to parse slot time during booking check:", e);
+     // If date parsing fails, we assume it's unsafe or corrupted.
+     return { error: "Could not safely verify the time of this slot." };
+  }
+
+  // ── 4. Update the slot (only if still open) ───────────────
   const { data, error } = await supabase
     .from("slots")
     .update({

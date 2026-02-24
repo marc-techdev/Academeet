@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
 import { Loader2, CalendarCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { bookSlot, type BookSlotResult } from "@/app/student/dashboard/actions";
 
@@ -66,6 +67,8 @@ export function BookingDialog({
     FormData
   >(bookSlot, {});
 
+  const router = useRouter();
+
   const form = useForm<AgendaFormValues>({
     resolver: zodResolver(agendaSchema),
     defaultValues: { agenda: "" },
@@ -79,12 +82,13 @@ export function BookingDialog({
 
     if (state.success) {
       toast.success("Slot reserved successfully!");
+      router.refresh();
       form.reset();
       onOpenChange(false);
     } else if (state.error) {
       toast.error(state.error);
     }
-  }, [state, form, onOpenChange]);
+  }, [state, form, onOpenChange, router]);
 
   // Reset form when dialog closes
   const handleOpenChange = (next: boolean) => {

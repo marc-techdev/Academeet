@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, UserCircle, Save, Trash2, Edit2 } from "lucide-react";
+import { CalendarDays, Clock, UserCircle, Save, Trash2, Edit2, AlertTriangle, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { updateBookingAgenda, cancelBooking } from "@/app/student/dashboard/actions";
@@ -57,6 +57,7 @@ export function StudentManageBookingDialog({
   
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
 
   // Derive time visually
   const slotTime = `${safeFormatTime(window.date, slot.start_time)} – ${safeFormatTime(window.date, slot.end_time)}`;
@@ -76,14 +77,13 @@ export function StudentManageBookingDialog({
   };
 
   const handleCancelBooking = async () => {
-    if (!globalThis.confirm("Are you sure you want to cancel this booking? This action cannot be undone and you will lose this time slot.")) return;
-    
     setIsCancelling(true);
     const result = await cancelBooking(slot.id);
     if (result.error) {
        toast.error(result.error);
     } else {
        toast.success("Booking cancelled successfully.");
+       setIsConfirmingCancel(false);
        onOpenChange(false);
        router.refresh();
     }
@@ -92,101 +92,142 @@ export function StudentManageBookingDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl p-0 rounded-2xl overflow-hidden border-none text-zinc-900">
+      <DialogContent className="sm:max-w-2xl w-full p-0 rounded-2xl overflow-hidden border-none text-zinc-900 shadow-2xl">
         
-        {/* Header Block */}
-        <div className="bg-[#5438dc] p-6 pb-20 relative">
-          <DialogTitle className="text-white text-xl font-bold flex items-center gap-3">
-             <CalendarDays className="h-6 w-6 text-indigo-200" />
-             My Consultation Booking
-          </DialogTitle>
-          <DialogDescription className="text-indigo-100 font-medium mt-1">
-             Manage your upcoming appointment.
-          </DialogDescription>
-        </div>
-
-        {/* Floating Details Card */}
-        <div className="bg-white mx-6 -mt-12 rounded-xl border border-zinc-100 shadow-md p-5 pb-6 mb-6">
-           <div className="flex flex-col gap-4">
-              
-              <div className="flex items-center justify-between border-b border-zinc-50 pb-4">
-                 <div className="flex items-center gap-3">
-                    <UserCircle className="h-10 w-10 text-zinc-300" />
-                    <div>
-                      <p className="text-sm text-zinc-500 font-semibold mb-0.5">Professor</p>
-                      <p className="text-base font-bold text-zinc-900">Prof. {professorName}</p>
-                    </div>
-                 </div>
-                 <Badge variant="secondary" className="bg-[#5438dc]/10 text-[#5438dc] hover:bg-[#5438dc]/20">
-                   {window.topic}
-                 </Badge>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                 <div className="bg-zinc-100 p-2 rounded-lg text-zinc-500">
-                   <Clock className="h-5 w-5" />
-                 </div>
-                 <div>
-                   <p className="text-sm font-semibold text-zinc-500">Scheduled Time</p>
-                   <p className="font-bold text-zinc-800">
-                      {format(new Date(slotDate), "EEEE, MMMM d, yyyy")}
-                   </p>
-                   <p className="text-sm font-bold text-[#5438dc]">{slotTime}</p>
-                 </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-zinc-100">
-                 <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold text-zinc-500">My Agenda</p>
-                    {!isEditing && (
-                      <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-8 text-[#5438dc] hover:text-[#5438dc] hover:bg-[#5438dc]/10">
-                         <Edit2 className="h-4 w-4 mr-2" />
-                         Edit Agenda
-                      </Button>
-                    )}
-                 </div>
-                 
-                 {isEditing ? (
-                    <div className="flex flex-col gap-3">
-                       <Textarea 
-                         value={agendaForm}
-                         onChange={e => setAgendaForm(e.target.value)}
-                         className="bg-zinc-50 border-zinc-200 focus-visible:ring-[#5438dc] min-h-[100px]"
-                         placeholder="What do you want to discuss?"
-                       />
-                       <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                          <Button size="sm" onClick={handleSaveAgenda} disabled={isLoading} className="bg-[#5438dc] hover:bg-[#5438dc]/90 text-white">
-                             <Save className="h-4 w-4 mr-2" />
-                             {isLoading ? "Saving..." : "Save Changes"}
-                          </Button>
-                       </div>
-                    </div>
-                 ) : (
-                    <div className="bg-zinc-50 text-zinc-700 text-sm p-4 rounded-lg font-medium border border-zinc-100 min-h-[80px]">
-                       {slot.agenda ? slot.agenda : <span className="text-zinc-400 italic">No agenda provided.</span>}
-                    </div>
-                 )}
-              </div>
-           </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="px-6 pb-6 flex justify-between items-center">
-            <Button 
-               variant="outline" 
-               className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-               onClick={handleCancelBooking}
-               disabled={isCancelling}
-            >
-               <Trash2 className="h-4 w-4 mr-2" />
-               {isCancelling ? "Cancelling..." : "Cancel Appointment"}
-            </Button>
+        {isConfirmingCancel ? (
+          <div className="flex flex-col bg-red-50/30 w-full relative">
+            <div className="p-14 flex flex-col items-center justify-center text-center">
+               <div className="h-20 w-20 bg-red-100 rounded-full flex items-center justify-center mb-6">
+                 <AlertTriangle className="h-10 w-10 text-red-600" />
+               </div>
+               <h3 className="text-3xl font-extrabold text-red-900 mb-4 tracking-tight">Cancel Appointment?</h3>
+               <p className="text-red-700 font-medium text-lg leading-relaxed max-w-lg mx-auto">
+                 Are you sure you want to permanently cancel this consultation with Prof. {professorName}?<br/><br/>
+                 This action cannot be undone and your slot will be released.
+               </p>
+            </div>
             
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-               Close
-            </Button>
-        </div>
+            <div className="p-6 pt-0 flex bg-transparent items-center gap-4 justify-center px-10 pb-10">
+              <Button 
+                variant="outline" 
+                className="flex-1 bg-white border-zinc-200 text-zinc-800 hover:bg-zinc-50 rounded-xl h-12 font-bold text-base shadow-sm"
+                onClick={() => setIsConfirmingCancel(false)}
+                disabled={isCancelling}
+              >
+                Keep Appointment
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl h-12 font-bold text-base shadow-sm"
+                onClick={handleCancelBooking}
+                disabled={isCancelling}
+              >
+                {isCancelling ? "Cancelling..." : "Yes, Cancel"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col w-full bg-white relative">
+            {/* Header Block */}
+            <div className="bg-[#5438dc] p-8 pb-10">
+              <DialogTitle className="text-white text-2xl font-bold flex items-center gap-3">
+                 <CalendarDays className="h-7 w-7 text-indigo-200" />
+                 My Consultation Booking
+              </DialogTitle>
+              <DialogDescription className="text-indigo-100 font-medium mt-2 text-base">
+                 Manage your upcoming appointment.
+              </DialogDescription>
+            </div>
+
+            {/* Body */}
+            <div className="bg-white p-8">
+               <div className="flex flex-col gap-8">
+                  
+                  {/* Professor Info */}
+                  <div className="flex items-start justify-between border-b border-zinc-100 pb-8">
+                     <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-zinc-100 flex items-center justify-center border border-zinc-200">
+                           <UserCircle className="h-8 w-8 text-zinc-400" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-zinc-500 font-semibold mb-0.5 tracking-wide uppercase">Professor</p>
+                          <p className="text-lg font-bold text-zinc-900">Prof. {professorName}</p>
+                        </div>
+                     </div>
+                     <Badge variant="secondary" className="bg-[#5438dc]/10 text-[#5438dc] hover:bg-[#5438dc]/20 mt-1 px-3 py-1 font-semibold border-0 rounded-full tracking-wide">
+                       {window.topic}
+                     </Badge>
+                  </div>
+
+                  {/* Time Info */}
+                  <div className="flex items-start gap-4">
+                     <div className="bg-zinc-100 p-3 rounded-2xl border border-zinc-200 text-zinc-500">
+                       <Clock className="h-6 w-6" />
+                     </div>
+                     <div className="mt-0.5">
+                       <p className="text-xs text-zinc-500 font-semibold mb-0.5 tracking-wide uppercase">Scheduled Time</p>
+                       <p className="font-bold text-zinc-900 text-base">
+                          {format(new Date(slotDate), "EEEE, MMMM d, yyyy")}
+                       </p>
+                       <p className="text-sm font-bold text-[#5438dc] mt-0.5">{slotTime}</p>
+                     </div>
+                  </div>
+                  
+                  {/* Agenda Group */}
+                  <div className="mt-2 border-t border-zinc-100 pt-8">
+                     <div className="flex items-center justify-between mb-4">
+                        <p className="text-sm font-semibold text-zinc-600 tracking-wide">My Agenda</p>
+                        {!isEditing && (
+                          <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-8 text-[#5438dc] hover:text-[#5438dc] hover:bg-[#5438dc]/10 font-bold">
+                             <Edit2 className="h-3.5 w-3.5 mr-2" />
+                             Edit Agenda
+                          </Button>
+                        )}
+                     </div>
+                     
+                     {isEditing ? (
+                        <div className="flex flex-col gap-3">
+                           <Textarea 
+                             value={agendaForm}
+                             onChange={e => setAgendaForm(e.target.value)}
+                             className="bg-white border-zinc-300 focus-visible:ring-[#5438dc] min-h-[120px] rounded-xl text-zinc-900 p-4 shadow-sm"
+                             placeholder="What do you want to discuss?"
+                           />
+                           <div className="flex justify-end gap-2 mt-2">
+                              <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="rounded-xl font-bold px-4 h-9">Cancel</Button>
+                              <Button size="sm" onClick={handleSaveAgenda} disabled={isLoading} className="bg-[#5438dc] hover:bg-[#5438dc]/90 text-white rounded-xl font-bold px-4 h-9 shadow-sm">
+                                 <Save className="h-4 w-4 mr-2" />
+                                 {isLoading ? "Saving..." : "Save Changes"}
+                              </Button>
+                           </div>
+                        </div>
+                     ) : (
+                        <div className="bg-zinc-50 text-zinc-800 text-base p-5 rounded-xl border border-zinc-200 min-h-[120px] shadow-sm whitespace-pre-wrap">
+                           {slot.agenda ? slot.agenda : <span className="text-zinc-400 italic">No agenda provided.</span>}
+                        </div>
+                     )}
+                  </div>
+               </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="px-8 pb-8 pt-0 flex justify-between items-center bg-white rounded-b-2xl">
+                <Button 
+                   variant="outline" 
+                   className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 font-bold px-5 py-2 h-10 rounded-xl bg-white shadow-sm"
+                   onClick={() => setIsConfirmingCancel(true)}
+                   disabled={isCancelling}
+                >
+                   <Trash2 className="h-4 w-4 mr-2" />
+                   Cancel Appointment
+                </Button>
+                
+                <Button variant="ghost" className="font-bold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-xl px-5 h-10" onClick={() => onOpenChange(false)}>
+                   Close
+                </Button>
+            </div>
+          </div>
+        )}
 
       </DialogContent>
     </Dialog>

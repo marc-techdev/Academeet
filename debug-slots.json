@@ -1,0 +1,134 @@
+[
+  {
+    "id": "c6e0df5a-9b3b-46e0-8a9f-c36a325d5306",
+    "window_id": "4b1f70a5-40ae-4c05-95a0-0e4c3290ec1d",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T06:18:00+00:00",
+    "end_time": "2026-02-24T06:48:00+00:00",
+    "status": "cancelled",
+    "agenda": "[CANCELLED: Class Conflict]\n\nOriginal Agenda:\nasdqwdqwdret3w54tert",
+    "created_at": "2026-02-24T06:19:06.411677+00:00"
+  },
+  {
+    "id": "b8c864e3-0047-462a-9993-6134ee4951b6",
+    "window_id": "7e2da6b2-7d57-4f1f-bbaa-dc976edfc2ee",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T02:45:00+00:00",
+    "end_time": "2026-02-24T03:00:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T10:17:16.857965+00:00"
+  },
+  {
+    "id": "725808e0-5215-4022-ac32-1bef2ccd2451",
+    "window_id": "b034d428-fd4e-4538-a43e-a13be263137b",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T14:15:00+00:00",
+    "end_time": "2026-02-24T14:35:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T14:14:47.948479+00:00"
+  },
+  {
+    "id": "992afaca-6acc-404a-81a0-1bf2635eb558",
+    "window_id": "b034d428-fd4e-4538-a43e-a13be263137b",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T14:35:00+00:00",
+    "end_time": "2026-02-24T14:55:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T14:14:47.948479+00:00"
+  },
+  {
+    "id": "63c8f475-194b-41bc-b6be-34bc100ebf2d",
+    "window_id": "6820f12f-4071-4d60-adef-86770fd0d4fd",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T07:55:00+00:00",
+    "end_time": "2026-02-24T08:25:00+00:00",
+    "status": "cancelled",
+    "agenda": "[CANCELLED: Class Conflict]\n\nOriginal Agenda:\ntestingtesting",
+    "created_at": "2026-02-24T07:55:54.903655+00:00"
+  },
+  {
+    "id": "b13998e6-722b-48a8-abf8-ef8899a7bc3d",
+    "window_id": "7e2da6b2-7d57-4f1f-bbaa-dc976edfc2ee",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T02:00:00+00:00",
+    "end_time": "2026-02-24T02:15:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T10:17:16.857965+00:00"
+  },
+  {
+    "id": "cd74663b-7366-47ce-8f9b-5285220e7843",
+    "window_id": "7e2da6b2-7d57-4f1f-bbaa-dc976edfc2ee",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T02:15:00+00:00",
+    "end_time": "2026-02-24T02:30:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T10:17:16.857965+00:00"
+  },
+  {
+    "id": "b6cdf223-2b5c-4a2f-9942-8b943fff2f63",
+    "window_id": "12b1820a-940e-44f7-8295-15889142fa9c",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T01:00:00+00:00",
+    "end_time": "2026-02-24T01:30:00+00:00",
+    "status": "open",
+    "agenda": null,
+    "created_at": "2026-02-24T10:17:41.761727+00:00"
+  },
+  {
+    "id": "1770b29c-0cd2-4a01-b9eb-764b36491ba1",
+    "window_id": "e3e5828a-aeb0-4e78-b468-0a3e4aa5d573",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-23T19:15:00+00:00",
+    "end_time": "2026-02-23T19:30:00+00:00",
+    "status": "cancelled",
+    "agenda": "srfgwertertert",
+    "created_at": "2026-02-23T18:02:55.869907+00:00"
+  },
+  {
+    "id": "a3d2743c-d44f-47b9-b328-41249d8f1009",
+    "window_id": "e3e5828a-aeb0-4e78-b468-0a3e4aa5d573",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-23T19:30:00+00:00",
+    "end_time": "2026-02-23T19:45:00+00:00",
+    "status": "cancelled",
+    "agenda": "dasdasdasdadasd",
+    "created_at": "2026-02-23T18:02:55.869907+00:00"
+  },
+  {
+    "id": "b3abdcc3-1038-452c-b5f3-3d7568027d69",
+    "window_id": "dd9f7ebf-8283-487d-bf46-eb83ce8b0e88",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T07:00:00+00:00",
+    "end_time": "2026-02-24T07:30:00+00:00",
+    "status": "cancelled",
+    "agenda": "revision matrix",
+    "created_at": "2026-02-24T06:00:12.889293+00:00"
+  },
+  {
+    "id": "8ad291bd-2a1c-4161-b564-70db59ea8a29",
+    "window_id": "dd9f7ebf-8283-487d-bf46-eb83ce8b0e88",
+    "professor_id": "f36de6f2-c615-4995-81c7-f848bcd000d5",
+    "student_id": null,
+    "start_time": "2026-02-24T07:30:00+00:00",
+    "end_time": "2026-02-24T08:00:00+00:00",
+    "status": "cancelled",
+    "agenda": "revision matrix",
+    "created_at": "2026-02-24T06:00:12.889293+00:00"
+  }
+]

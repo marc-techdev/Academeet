@@ -299,11 +299,16 @@ export async function cancelConsultationBooking(slotId: string, reason?: string)
 
   if (fetchError) return { error: fetchError.message };
 
-  // The user requested that when a professor cancels a booking, it should just revert to "open" 
-  // so another student can take the spot. We clear the student and agenda.
+  const oldAgenda = (slot as any)?.agenda || "No previous agenda";
+  const newAgenda = reason 
+    ? `[CANCELLED by Professor]\nReason: ${reason}\n\n[Original]: ${oldAgenda}`
+    : `[CANCELLED by Professor]\n\n[Original]: ${oldAgenda}`;
+
+  // We change the status to 'cancelled' so it moves to Past Appointments safely.
+  // We keep the student_id attached so the Student UI can receive the notification payload
   const { error } = await supabase
     .from("slots")
-    .update({ status: "open", student_id: null, agenda: null } as never)
+    .update({ status: "cancelled", agenda: newAgenda } as never)
     .eq("id", slotId);
 
   if (error) {

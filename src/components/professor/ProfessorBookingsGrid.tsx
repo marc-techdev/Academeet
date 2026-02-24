@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef, Fragment } from "react";
-import { format, parseISO, isAfter } from "date-fns";
+import { format, isSameDay, isAfter, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths } from "date-fns";
 import * as anime from "animejs";
 import { Plus, Calendar, ChevronDown, CheckCircle2, Clock, Trash2, Edit2, User as UserIcon, Eye, FileText } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import { BookedSlotDialog } from "@/components/professor/BookedSlotDialog";
 import { DeleteWindowButton } from "@/components/professor/DeleteWindowButton";
 import { EditWindowDialog } from "@/components/professor/EditWindowDialog";
 import { DeletePastSlotButton } from "@/components/professor/DeletePastSlotButton";
+import { DeleteUpcomingSlotButton } from "@/components/professor/DeleteUpcomingSlotButton";
 
 import type { SlotStatus } from "@/types/database";
 
@@ -69,10 +70,18 @@ export function ProfessorBookingsGrid({
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("search")?.toLowerCase() || "";
 
+  // ── Live Clock Tracker for Realtime Expiration ──
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    // Tick every minute to automatically shift slots matching the live time
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   // ── Data Processing ───────────────────────────────────────
   const allSlots = useMemo(() => {
     let flat: FlattenedSlot[] = [];
-    const now = new Date();
 
     windows.forEach((w) => {
       const windowSlots = slotsByWindow.get(w.id) ?? [];
@@ -121,34 +130,44 @@ export function ProfessorBookingsGrid({
   }, [windows, slotsByWindow]);
 
   const filteredSlots = useMemo(() => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
+    const now = currentTime;
+    
     return allSlots.filter((slot) => {
-      let isUpcoming = true; // Default safety fallback for malformed data
+      let isUpcoming = true; 
       let slotParsedTime = 0;
       let slotDateObj = new Date();
       
       try {
-        const endStr = slot.end_time.includes("T") ? slot.end_time : `${slot.date}T${slot.end_time}`;
-        const startStr = slot.start_time.includes("T") ? slot.start_time : `${slot.date}T${slot.start_time}`;
-        
-        const parsed = parseISO(endStr);
-        slotDateObj = parseISO(startStr);
-        slotParsedTime = parsed.getTime();
+        let parsedStart: Date;
+        let parsedEnd: Date;
+
+        if (slot.start_time.includes("T")) {
+           parsedStart = new Date(slot.start_time);
+           parsedEnd = new Date(slot.end_time);
+        } else {
+           const [sHour, sMin, sSec] = slot.start_time.split(":").map(Number);
+           const [eHour, eMin, eSec] = slot.end_time.split(":").map(Number);
+           const [y, m, d] = slot.date.split("-").map(Number);
+           parsedStart = new Date(y, m - 1, d, sHour || 0, sMin || 0, sSec || 0);
+           parsedEnd = new Date(y, m - 1, d, eHour || 0, eMin || 0, eSec || 0);
+        }
+
+        slotDateObj = parsedStart;
+        slotParsedTime = parsedEnd.getTime();
         
         if (!isNaN(slotParsedTime)) {
           if (slot.status === "cancelled") {
             isUpcoming = false;
+          } else if (slot.status === "open") {
+            // Unbooked slots expire the moment their start time passes
+            isUpcoming = parsedStart.getTime() > now.getTime();
           } else {
-            isUpcoming = isAfter(parsed, now) || slotParsedTime === now.getTime();
+            // Booked slots stay in upcoming until their end time passes
+            isUpcoming = slotParsedTime > now.getTime();
           }
 
-          // Important Fix: If we are looking at the "past" tab, we only want to see actual "booked" 
-          // appointments that happened. We do NOT want to see "open" unbooked slots lingering in the past.
-          if (!isUpcoming && slot.status === "open") {
-             return false;
-          }
+          // The user specifically requested: if it's an "open" slot that has expired, 
+          // it should naturally flow into the "Past" tab instead of disappearing.
         }
       } catch (e) {
         console.error("Date format error for filteredSlots:", slot);
@@ -177,7 +196,7 @@ export function ProfessorBookingsGrid({
            } else if (dateFilter === "week") {
               const diffTime = Math.abs(slotDateObj.getTime() - now.getTime());
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-              if (activeTab === "upcoming" && (slotDateObj < startOfToday || diffDays > 7)) return false;
+              if (activeTab === "upcoming" && (slotDateObj < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || diffDays > 7)) return false;
               if (activeTab === "past" && ((slotDateObj > now && slot.status !== "cancelled") || diffDays > 7)) return false;
            } else if (dateFilter === "month") {
               if (slotDateObj.getMonth() !== now.getMonth() || slotDateObj.getFullYear() !== now.getFullYear()) return false;
@@ -194,7 +213,7 @@ export function ProfessorBookingsGrid({
       
       return true;
     });
-  }, [allSlots, activeTab, searchQuery, dateFilter, selectedDateFilter]);
+  }, [allSlots, activeTab, searchQuery, dateFilter, selectedDateFilter, currentTime]);
 
   // ── Animations ────────────────────────────────────────────
   useEffect(() => {
@@ -327,9 +346,9 @@ export function ProfessorBookingsGrid({
                               <div>
                                 <h4 className="font-bold text-zinc-800 text-base">{slot.student!.full_name}</h4>
                                 <div className="text-xs text-zinc-500 mt-0.5 space-x-1">
-                                  <span className="font-medium text-zinc-700">{format(parseISO(startDt), "MMM d, yyyy")}</span>
+                                  <span className="font-medium text-zinc-700">{format(new Date(startDt), "MMM d, yyyy")}</span>
                                   <span>•</span>
-                                  <span>{format(parseISO(startDt), "h:mm a")} - {format(parseISO(endDt), "h:mm a")}</span>
+                                  <span>{format(new Date(startDt), "h:mm a")} - {format(new Date(endDt), "h:mm a")}</span>
                                   <span>•</span>
                                   <span className="font-medium text-blue-600">{slot.window_topic}</span>
                                 </div>
@@ -418,9 +437,9 @@ export function ProfessorBookingsGrid({
                 try {
                   const startDateTime = slot.start_time.includes("T") ? slot.start_time : `${slot.date}T${slot.start_time}`;
                   const endDateTime = slot.end_time.includes("T") ? slot.end_time : `${slot.date}T${slot.end_time}`;
-                  startTimeStr = format(parseISO(startDateTime), "h:mm a");
-                  endTimeStr = format(parseISO(endDateTime), "h:mm a");
-                  dayMonthStr = format(parseISO(startDateTime), "dd MMM, yyyy");
+                  startTimeStr = format(new Date(startDateTime), "h:mm a");
+                  endTimeStr = format(new Date(endDateTime), "h:mm a");
+                  dayMonthStr = format(new Date(startDateTime), "dd MMM, yyyy");
                 } catch (e) {
                   console.error("Date format error for slot:", slot);
                 }
@@ -608,9 +627,15 @@ export function ProfessorBookingsGrid({
                                 <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-zinc-200 text-zinc-500 hover:text-blue-600 hover:border-blue-200"><Edit2 className="w-4 h-4"/></Button>
                               }
                             />
-                            <DeleteWindowButton windowId={slot.window_id} customTrigger={
-                                <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-zinc-200 text-zinc-500 hover:text-red-600 hover:border-red-200"><Trash2 className="w-4 h-4"/></Button>
-                            } />
+                            {slot.id.toString().includes("-dummy") ? (
+                               <DeleteWindowButton windowId={slot.window_id} customTrigger={
+                                   <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-zinc-200 text-zinc-500 hover:text-red-600 hover:border-red-200" title="Delete entire empty block"><Trash2 className="w-4 h-4"/></Button>
+                               } />
+                            ) : (
+                               <DeleteUpcomingSlotButton slotId={slot.id} customTrigger={
+                                   <Button size="icon" variant="outline" className="h-9 w-9 rounded-xl border-zinc-200 text-zinc-500 hover:text-red-600 hover:border-red-200" title="Delete single slot"><Trash2 className="w-4 h-4"/></Button>
+                               } />
+                            )}
                           </div>
                         )}
                       </div>

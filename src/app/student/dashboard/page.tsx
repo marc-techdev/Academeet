@@ -35,7 +35,9 @@ export default async function StudentDashboardPage() {
   if (!profile || profile.role !== "student") redirect("/login");
 
   // ── Fetch upcoming windows ────────────────────────────────
-  const today = new Date().toISOString().split("T")[0];
+  // Use local timezone formatting so late-night PH time doesn't get pushed into yesterday UTC
+  const { format } = await import("date-fns");
+  const today = format(new Date(), "yyyy-MM-dd");
 
   const { data: windows } = await supabase
     .from("consultation_windows")
