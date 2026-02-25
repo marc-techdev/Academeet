@@ -305,8 +305,8 @@ export function StudentDashboardLayout({
 
   return (
     <div className="flex-1 flex overflow-hidden border-l border-zinc-200/50 bg-white">
-      {/* SECONDARY SIDEBAR (Local Context) */}
-      <div className="w-[300px] border-r border-zinc-200 flex flex-col h-full bg-zinc-50/30 overflow-y-auto overflow-x-hidden">
+      {/* SECONDARY SIDEBAR (Local Context) — hidden on mobile, visible on lg+ */}
+      <div className="hidden lg:flex w-[300px] border-r border-zinc-200 flex-col h-full bg-zinc-50/30 overflow-y-auto overflow-x-hidden">
         
         {/* Header / Search Area */}
         <div className="p-6 border-b border-zinc-100 hidden">
@@ -495,7 +495,159 @@ export function StudentDashboardLayout({
            </div>
         </div>
 
-        <div className="flex items-center justify-between p-8 pb-4">
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* MOBILE CALENDAR VIEW — visible only below lg      */}
+        {/* ═══════════════════════════════════════════════════ */}
+        <div className="flex lg:hidden flex-col flex-1 overflow-y-auto">
+          {/* Mobile Month Header */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900">
+              {format(currentMonth, "MMMM yyyy")}
+            </h1>
+            <div className="flex gap-1">
+              <button onClick={prevMonth} className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors"><ChevronLeft className="h-5 w-5" /></button>
+              <button onClick={nextMonth} className="p-2 hover:bg-zinc-100 rounded-xl text-zinc-500 transition-colors"><ChevronRight className="h-5 w-5" /></button>
+            </div>
+          </div>
+
+          {/* Mobile Calendar Grid (acts as the big calendar) */}
+          <div className="px-5 pb-4">
+            <div className="grid grid-cols-7 text-center text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2 pb-2 border-b border-zinc-100">
+              <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+            </div>
+            <div className="grid grid-cols-7 gap-y-1">
+              {calendarDays.map((d, i) => {
+                const isCurMonth = isSameMonth(d, monthStart);
+                const isTodayDate = isToday(d);
+                const isSelected = selectedCalendarDate && isSameDay(d, selectedCalendarDate);
+                const dateStr = format(d, "yyyy-MM-dd");
+                const daysWindows = windowsByDate.get(dateStr) ?? [];
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleDayClick(d)}
+                    className={`
+                      relative flex flex-col items-center justify-center rounded-xl py-2 mx-0.5 transition-all cursor-pointer
+                      ${!isCurMonth ? "text-zinc-300" : "text-zinc-700"}
+                      ${isSelected ? "bg-[#5438dc] text-white shadow-lg font-bold" : "hover:bg-zinc-100"}
+                      ${isTodayDate && !isSelected ? "border-2 border-[#5438dc] text-[#5438dc] font-bold" : ""}
+                    `}
+                  >
+                    <span className="text-sm font-semibold">{format(d, "d")}</span>
+                    {/* Dot indicators for windows */}
+                    {daysWindows.length > 0 && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {daysWindows.slice(0, 3).map((w) => {
+                          const dotColor = CATEGORY_COLORS[w.topic] ?? CATEGORY_COLORS["Other"];
+                          return (
+                            <div key={w.id} className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white/80" : dotColor}`} />
+                          );
+                        })}
+                        {daysWindows.length > 3 && (
+                          <span className={`text-[8px] font-bold ${isSelected ? "text-white/70" : "text-zinc-400"}`}>+{daysWindows.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Mobile My Schedules Section */}
+          <div className="px-5 py-4 border-t border-zinc-100">
+            <div
+              className="flex items-center justify-between mb-3 cursor-pointer text-zinc-900 group"
+              onClick={() => setIsMySchedulesOpen(!isMySchedulesOpen)}
+            >
+              <h3 className="font-bold tracking-tight text-sm uppercase group-hover:text-[#5438dc] transition-colors">
+                My Schedules
+              </h3>
+              {isMySchedulesOpen ? (
+                <ChevronUp className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+              )}
+            </div>
+
+            {isMySchedulesOpen && (
+              <div className="space-y-3">
+                {upcomingBookedSlots.length === 0 ? (
+                  <p className="text-zinc-400 text-sm italic">No confirmed bookings.</p>
+                ) : (
+                  upcomingBookedSlots.slice(0, 5).map(slot => {
+                    const win = activeWindows.find(w => w.id === slot.window_id);
+                    if (!win) return null;
+                    const bgColorClass = CATEGORY_COLORS[win.topic] ?? CATEGORY_COLORS["Other"];
+
+                    return (
+                      <div
+                        key={slot.id}
+                        onClick={() => {
+                          setSelectedManageSlot(slot);
+                          setSelectedManageWindow(win);
+                          setManageSlotOpen(true);
+                        }}
+                        className="flex items-start gap-3 group cursor-pointer p-2 -mx-2 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-zinc-100 transition-all"
+                      >
+                        <div className={`mt-1 h-3 w-3 rounded-full shrink-0 ${bgColorClass}`} />
+                        <div className="flex flex-col">
+                          <span className="text-zinc-700 font-semibold text-sm leading-tight group-hover:text-[#5438dc] transition-colors line-clamp-1">
+                            Consultation with Prof. {profMap.get(win.professor_id) ?? "Unknown"}
+                          </span>
+                          <span className="text-zinc-400 text-xs font-medium mt-0.5">
+                            {format(safeParseDate(win.date, slot.start_time), "MMM d")}, {safeFormatTime(win.date, slot.start_time)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Categories Section */}
+          <div className="px-5 py-4 border-t border-zinc-100 pb-8">
+            <div
+              className="flex items-center justify-between mb-3 cursor-pointer text-zinc-900 group"
+              onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+            >
+              <h3 className="font-bold tracking-tight text-sm uppercase group-hover:text-[#5438dc] transition-colors">
+                Categories
+              </h3>
+              {isCategoriesOpen ? (
+                <ChevronUp className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-zinc-400 group-hover:text-[#5438dc]" />
+              )}
+            </div>
+
+            {isCategoriesOpen && (
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(CATEGORY_COLORS).map(([cat, colorClass]) => {
+                  const isActive = activeCategories.includes(cat);
+                  return (
+                    <div
+                      key={cat}
+                      onClick={() => toggleCategory(cat)}
+                      className={`flex items-center gap-2 cursor-pointer transition-opacity px-3 py-1.5 rounded-full border ${isActive ? "opacity-100 border-zinc-200 bg-white shadow-sm" : "opacity-40 hover:opacity-70 border-transparent"}`}
+                    >
+                      <div className={`h-2.5 w-2.5 rounded-full ${colorClass}`} />
+                      <span className={`text-sm font-semibold ${isActive ? "text-zinc-800" : "text-zinc-500"}`}>{cat}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════ */}
+        {/* DESKTOP BIG CALENDAR — hidden below lg             */}
+        {/* ═══════════════════════════════════════════════════ */}
+        <div className="hidden lg:flex items-center justify-between p-8 pb-4">
            {/* Top Title */}
            <div className="flex items-center gap-6">
               <h1 className="text-3xl font-bold tracking-tight text-zinc-900 border-l-4 border-[#5438dc] pl-4">
@@ -505,7 +657,7 @@ export function StudentDashboardLayout({
         </div>
 
         {/* Big Calendar Grid Container */}
-        <div className="flex-1 flex flex-col p-8 pt-4 overflow-hidden">
+        <div className="hidden lg:flex flex-1 flex-col p-8 pt-4 overflow-hidden">
            {/* Grid Headers */}
            <div className="grid grid-cols-7 border-b border-zinc-200/60 pb-3">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
