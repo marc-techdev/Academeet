@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod/v4";
-import { addMinutes, parse, isBefore } from "date-fns";
+import { addMinutes, parse, isBefore, format } from "date-fns";
 
 // ── Zod schema ──────────────────────────────────────────────
 
@@ -84,8 +84,8 @@ export async function createConsultationWindow(
   while (isBefore(addMinutes(cursor, duration), endDt) || addMinutes(cursor, duration).getTime() === endDt.getTime()) {
     const slotEnd = addMinutes(cursor, duration);
     pendingSlots.push({
-      start_time: cursor.toISOString(),
-      end_time: slotEnd.toISOString(),
+      start_time: format(cursor, "yyyy-MM-dd'T'HH:mm:ssxxx"), // Fix: Supabase expects TIMESTAMPTZ with full ISO string
+      end_time: format(slotEnd, "yyyy-MM-dd'T'HH:mm:ssxxx"),
     });
     cursor = slotEnd;
   }
@@ -234,8 +234,8 @@ export async function editConsultationWindow(
     slots.push({
       window_id: windowId,
       professor_id: user.id,
-      start_time: cursor.toISOString(),
-      end_time: slotEnd.toISOString(),
+      start_time: format(cursor, "yyyy-MM-dd'T'HH:mm:ssxxx"), // Fix UTC offset shift for edits
+      end_time: format(slotEnd, "yyyy-MM-dd'T'HH:mm:ssxxx"),
       status: "open",
     });
     cursor = slotEnd;
@@ -354,6 +354,132 @@ export async function deleteMultiplePastSlots(slotIds: string[]): Promise<{ succ
 
   if (error) {
     return { error: error.message };
+  }
+
+  revalidatePath("/professor/dashboard");
+  return { success: true };
+}
+
+/**
+ * Server Action — clears all upcoming slots provided.
+ * - 'open' slots are deleted from the database.
+ * - 'booked' slots are marked 'cancelled' and the reason is appended to the agenda.
+ */
+export async function clearUpcomingConsultations(
+  slotIds: string[],
+  reason: string,
+  emptyWindowIds: string[] = []
+): Promise<{ success?: boolean; error?: string }> {
+  if ((!slotIds || slotIds.length === 0) && (!emptyWindowIds || emptyWindowIds.length === 0)) return { success: true };
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Authentication required to perform this action." };
+  }
+
+  // 1. Fetch current status of these slots to separate open from booked
+  const { data: slots, error: fetchError } = await supabase
+    .from("slots")
+    .select("id, status, agenda, window_id")
+    .in("id", slotIds)
+    .returns<{ id: string; status: string; agenda: string | null; window_id: string }[]>();
+
+  if (fetchError || !slots) {
+    return { error: fetchError?.message || "Failed to fetch slots for clearing." };
+  }
+
+  const openSlotIds: string[] = [];
+  const bookedSlots: any[] = [];
+
+  for (const s of slots) {
+    if (s.status === "open") {
+      openSlotIds.push(s.id);
+    } else if (s.status === "booked") {
+      bookedSlots.push(s);
+    }
+  }
+
+  // 2. Delete all open slots
+  if (openSlotIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("slots")
+      .delete()
+      .in("id", openSlotIds);
+
+    if (deleteError) {
+      console.error("Failed to delete open slots:", deleteError);
+      return { error: "Failed to clear open slots." };
+    }
+  }
+
+  // 3. Mark booked slots as cancelled & update agenda
+  if (bookedSlots.length > 0) {
+    // Supabase JS doesn't have a native bulk update with different values per row easily,
+    // but since we are applying the SAME logic/reason to all, we can map over them.
+    // However, if the old agenda differs per slot, we *must* update them individually 
+    // to preserve the original agenda text.
+    
+    // Using a Promise.all to update individually to preserve the specific original agendas.
+    const updatePromises = bookedSlots.map((s) => {
+      const oldAgenda = s.agenda || "No previous agenda";
+      const newAgenda = reason 
+        ? `[CANCELLED by Professor]\nReason: ${reason}\n\n[Original]: ${oldAgenda}`
+        : `[CANCELLED by Professor]\n\n[Original]: ${oldAgenda}`;
+
+      return supabase
+        .from("slots")
+        .update({ status: "cancelled", agenda: newAgenda } as never)
+        .eq("id", s.id);
+    });
+
+    const results = await Promise.all(updatePromises);
+    const hasError = results.find((r) => r.error);
+    
+    if (hasError) {
+      console.error("Failed to cancel some booked slots:", hasError.error);
+      return { error: "Failed to properly cancel all booked appointments." };
+    }
+  }
+
+  // 4. Cleanup Empty Windows
+  // Gather all windows that were passed in as empty placeholders,
+  // PLUS the windows of the open slots we just deleted.
+  const potentiallyEmptyWindowIds = new Set<string>([
+    ...emptyWindowIds,
+    ...openSlotIds.map(id => (slots || []).find(s => s.id === id)?.window_id).filter(Boolean) as string[]
+  ]);
+
+  if (potentiallyEmptyWindowIds.size > 0) {
+    const windowIdsArray = Array.from(potentiallyEmptyWindowIds);
+    // Fetch remaining slot counts for these windows
+    const { data: remainingSlots } = await supabase
+      .from("slots")
+      .select("window_id")
+      .in("window_id", windowIdsArray)
+      .returns<{ window_id: string }[]>();
+
+    const windowsWithSlots = new Set(remainingSlots?.map(s => s.window_id) || []);
+    
+    // Any window NOT in windowsWithSlots is truly empty and should be deleted
+    const trulyEmptyWindows = windowIdsArray.filter(wid => !windowsWithSlots.has(wid));
+
+    if (trulyEmptyWindows.length > 0) {
+      const { error: deleteWindowsError } = await supabase
+        .from("consultation_windows")
+        .delete()
+        .in("id", trulyEmptyWindows)
+        // Ensure we only delete windows owned by this professor
+        .eq("professor_id", user.id);
+
+      if (deleteWindowsError) {
+        console.error("Failed to delete empty windows:", deleteWindowsError);
+      }
+    }
   }
 
   revalidatePath("/professor/dashboard");

@@ -25,7 +25,9 @@ export function StudentNotificationBell({ slots, currentUserId }: StudentNotific
     try {
       const stored = localStorage.getItem(`academeet_dismissed_notifications_${currentUserId}`);
       if (stored) {
-        setDismissedIds(JSON.parse(stored));
+        setTimeout(() => {
+          setDismissedIds(JSON.parse(stored));
+        }, 0);
       }
     } catch (e) {
       console.error("Failed to parse dismissed notifications", e);
@@ -115,7 +117,7 @@ export function StudentNotificationBell({ slots, currentUserId }: StudentNotific
         <div className="text-xs text-zinc-600 pl-6 leading-relaxed">
           Your appointment on <span className="font-semibold">{timeStr}</span> was cancelled.
           <div className="mt-1.5 p-2 bg-white rounded-lg border border-zinc-100 shadow-sm text-zinc-700 italic">
-            "{reason}"
+            &quot;{reason}&quot;
           </div>
         </div>
       </div>

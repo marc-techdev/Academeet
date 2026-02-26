@@ -18,6 +18,7 @@ import { DeleteWindowButton } from "@/components/professor/DeleteWindowButton";
 import { EditWindowDialog } from "@/components/professor/EditWindowDialog";
 import { DeletePastSlotButton } from "@/components/professor/DeletePastSlotButton";
 import { DeleteUpcomingSlotButton } from "@/components/professor/DeleteUpcomingSlotButton";
+import { ClearUpcomingSlotsButton } from "@/components/professor/ClearUpcomingSlotsButton";
 
 import type { SlotStatus } from "@/types/database";
 
@@ -81,7 +82,7 @@ export function ProfessorBookingsGrid({
 
   // ── Data Processing ───────────────────────────────────────
   const allSlots = useMemo(() => {
-    let flat: FlattenedSlot[] = [];
+    const flat: FlattenedSlot[] = [];
 
     windows.forEach((w) => {
       const windowSlots = slotsByWindow.get(w.id) ?? [];
@@ -366,6 +367,11 @@ export function ProfessorBookingsGrid({
                 </DialogContent>
               </Dialog>
             )}
+            {activeTab === "upcoming" && filteredSlots.length > 0 && (
+              <ClearUpcomingSlotsButton 
+                slotIds={filteredSlots.filter(s => !s.id.endsWith("-dummy")).map(s => s.id)} 
+              />
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="relative inline-block text-left">
@@ -374,7 +380,7 @@ export function ProfessorBookingsGrid({
                 onChange={(e) => {
                   if (e.target.value !== "custom") {
                     setSelectedDateFilter(undefined);
-                    setDateFilter(e.target.value as any);
+                    setDateFilter(e.target.value as "all" | "today" | "week" | "month");
                   }
                 }}
                 className="appearance-none bg-white border border-zinc-200 text-zinc-600 font-medium py-2 pl-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ff5757]/20 focus:border-[#ff5757] sm:text-sm"

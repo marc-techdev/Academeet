@@ -23,7 +23,9 @@ export function useTimePresets() {
     try {
       const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
       if (stored) {
-        setPresets(JSON.parse(stored));
+        setTimeout(() => {
+          setPresets(JSON.parse(stored));
+        }, 0);
       }
     } catch (error) {
       console.error("Failed to load time presets", error);
@@ -40,7 +42,8 @@ export function useTimePresets() {
 
     // Generate a simple label like "9am - 12pm"
     const formatTime = (time: string) => {
-      let [hours, minutes] = time.split(":").map(Number);
+      let hours = Number(time.split(":")[0]);
+      const minutes = Number(time.split(":")[1]);
       const ampm = hours >= 12 ? "pm" : "am";
       hours = hours % 12 || 12;
       return `${hours}${minutes > 0 ? ":" + minutes : ""}${ampm}`;
